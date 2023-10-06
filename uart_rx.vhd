@@ -10,114 +10,126 @@
 -------------------------------------------------------------------------------
 
 library ieee;
-use IEEE.std_logic_1164.all;
-use IEEE.numeric_std.all;
+	use ieee.std_logic_1164.all;
+	use ieee.numeric_std.all;
 
-entity UART_RX is
-	port(
-		clk         : in std_logic;
-		rst         : in std_logic;
-		baud_av     : in std_logic;
-		baud_in     : in std_logic_vector(15 downto 0);
-		rx          : in std_logic;
-		data_out    : out std_logic_vector(7 downto 0);
-		data_av     : out std_logic
+entity uart_rx is
+	generic(
+		-- Baud divider default value should be floor(freq/baudrate), or 1 for simulation
+		BAUD_DIV_DEFAULT : std_logic_vector(15 downto 0) := x"0001"
 	);
-end UART_RX;
+	port(
+		clk       : in std_logic;
+		rst       : in std_logic;
+		--
+		baud_av_i : in std_logic;
+		baud_i    : in std_logic_vector(15 downto 0);
+		rx_i      : in std_logic;
+		--
+		data_o    : out std_logic_vector(7 downto 0);
+		data_av_o : out std_logic
+	);
+end uart_rx;
 
-architecture behavioral of UART_RX is
-
-	signal clkCounter: integer range 0 to 65535;
-	signal bitCounter: integer range 0 to 8;
-	signal sampling: std_logic;
-
-	type State is (IDLE, START_BIT, DATA_BITS, STOP_BIT);
-	signal currentState: State;
-
-	signal rx_data         : std_logic_vector(7 downto 0);
-	signal reg_freq_baud   : std_logic_vector(15 downto 0);
+architecture behavioral of uart_rx is
+	
+	type state_t is (Sidle, Sstart_bit, Sdata_bits, Sstop_bit);
+	signal reg_state: state_t;
+	
+	signal clk_counter_s : integer range 0 to 65535;
+	signal bit_counter_s : integer range 0 to 8;
+	signal sampling_s    : std_logic;
+	signal reg_rx_data   : std_logic_vector(7 downto 0);
+	signal reg_freq_baud : std_logic_vector(15 downto 0);
 
 begin
 
-	-- Frequency/BaudRate register
-	process(clk,rst)
+	-- User-defined registers:
+	-- Baud rate divider register
+	process(clk)
 	begin
-	if rst = '1' then
-		reg_freq_baud <= x"00d9";  -- floor(25e6 / 115200) = 217 is the standard frequency-baud rate for 115200 bps
-	elsif rising_edge(clk) then
-		if baud_av = '1' then
-			reg_freq_baud <= baud_in;
+		if rising_edge(clk) then
+			if rst = '1' then
+				reg_freq_baud <= BAUD_DIV_DEFAULT;
+			else
+				-- 
+				if baud_av_i = '1' then
+					reg_freq_baud <= baud_i;
+				end if;
+				
+			end if;
 		end if;
-	end if;
-	end process;
-
-	-- Clock counter
-	process(clk,rst)
+		end process;
+	
+	process(clk)
 	begin
 		if rst = '1' then
-			clkCounter <= 0;
+			clk_counter_s <= 0;
 		elsif rising_edge(clk) then
-			if currentState /= IDLE then
-				if clkCounter = to_integer(unsigned(reg_freq_baud))-1 then
-					clkCounter <= 0;
+			if reg_state /= Sidle then
+				if clk_counter_s = to_integer(unsigned(reg_freq_baud))-1 then
+					clk_counter_s <= 0;
 				else
-					clkCounter <= clkCounter + 1;
+					clk_counter_s <= clk_counter_s + 1;
 				end if;
 			else
-				clkCounter <= 0;
+				clk_counter_s <= 0;
 			end if;
 		end if;
 	end process;
-	sampling <= '1' when clkCounter = to_integer(unsigned(reg_freq_baud))/2 else '0';  
-
+	
 	-- Data reception state machine
+	sampling_s <= '1' when clk_counter_s = to_integer(unsigned(reg_freq_baud))/2 else '0';  
+
 	process(clk,rst)
 	begin
-		if rst = '1' then
-			bitCounter <= 0;
-			rx_data <= (others=>'0');
-			currentState <= IDLE;
-
-		elsif rising_edge(clk) then
-			case currentState is
-				when IDLE =>
-					bitCounter <= 0;
-					if rx = '0' then
-						currentState <= START_BIT;
+		if rising_edge(clk) then
+			if rst = '1' then
+				bit_counter_s <= 0;
+				reg_rx_data <= (others=>'0');
+				reg_state <= Sidle;
+			end if;
+		else
+			case reg_state is
+				when Sidle =>
+					bit_counter_s <= 0;
+					if rx_i = '0' then
+						reg_state <= Sstart_bit;
 					else
-						currentState <= IDLE;
+						reg_state <= Sidle;
 					end if;
 
-				when START_BIT =>
-					if sampling = '1' then
-						currentState <= DATA_BITS;
+				when Sstart_bit =>
+					if sampling_s = '1' then
+						reg_state <= Sdata_bits;
 					else
-						currentState <= START_BIT;
+						reg_state <= Sstart_bit;
 					end if;                    
 
-				when DATA_BITS =>
-					if bitCounter = 8 then
-						currentState <= STOP_BIT;
-					elsif sampling = '1' then           
-						rx_data <= rx & rx_data(7 downto 1);
-						bitCounter <= bitCounter + 1;
-						currentState <= DATA_BITS;
+				when Sdata_bits =>
+					if bit_counter_s = 8 then
+						reg_state <= Sstop_bit;
+					elsif sampling_s = '1' then           
+						reg_rx_data <= rx_i & reg_rx_data(7 downto 1);
+						bit_counter_s <= bit_counter_s + 1;
+						reg_state <= Sdata_bits;
 					else
-						currentState <= DATA_BITS;
+						reg_state <= Sdata_bits;
 					end if;
 						
-				when STOP_BIT =>
-					if rx = '1' and sampling = '1' then
-						currentState <= IDLE;
+				when Sstop_bit =>
+					if rx_i = '1' and sampling_s = '1' then
+						reg_state <= Sidle;
 					else
-						currentState <= STOP_BIT;
+						reg_state <= Sstop_bit;
 					end if;
 
 			end case;
 		end if;
 	end process;
-
-	data_out <= rx_data;
-	data_av <= sampling when currentState = STOP_BIT else '0';
+	
+	-- Entity outputs
+	data_o <= reg_rx_data;
+	data_av_o <= sampling_s when reg_state = Sstop_bit else '0';
 
 end behavioral;
