@@ -15,7 +15,7 @@ library ieee;
 	use ieee.std_logic_1164.all;
 	-- use ieee.numeric_std.all;
 
-use work.uart_widths_pkg.all;
+use work.uart_constants_pkg.all;
 
 entity tb_apb_uart is
 end tb_apb_uart;
@@ -23,9 +23,9 @@ end tb_apb_uart;
 architecture behavioral of tb_apb_uart is
 	-- Clock and reset
 	constant half_clk_period : time := 10 ns;
-	constant clk_period : time := 2*half_clk_period;
-	signal clk : std_logic := '0';
-	signal rstn : std_logic := '0';
+	constant clk_period      : time := 2*half_clk_period;
+	signal clk : std_logic   := '0';
+	signal rstn : std_logic  := '0';
 	
 	-- APB Requester signals
 	signal prdata_s    : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0);
@@ -40,7 +40,10 @@ architecture behavioral of tb_apb_uart is
 	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := (others => '0');
 	
 	-- UART signals
-	signal int_s : std_logic := '0';
+	signal uart_in_s : std_logic := '0';
+	signal uart_out_s : std_logic;
+	signal int_s : std_logic_vector(PERIPH_INT_WIDTH_c-1 downto 0);
+	
 	
 begin
 	-- Clock and reset
@@ -73,43 +76,55 @@ begin
 		pslverr_o => pslverr_s,
 		
 		-- UART 
-		rx_i      => '0',
-		tx_o      => open,
-		-- cts_i     =>,
-		-- rts_o     =>,
+		uart_rx_i      => uart_in_s,
+		uart_tx_o      => uart_out_s,
 		
 		-- Interrupt
 		int_o     => int_s
 	);
 	
-	-- Does not work with generic NUM_PERIPH, DATA_WIDTH and ADDR_WIDTH
-	process
+	UART_PROC: process
 	begin
 		wait until rstn = '1';
-		
-		-- APB write transaction
-		-- Setup phase
 		wait for clk_period;
-		paddr_s   <= x"00000008";
-		pwrite_S  <= '1';
-		psel_s    <= '1';
-		penable_s <= '0';
-		pwdata_s  <= x"ffffffff";
 		
-		-- Access phase
-		wait for clk_period;
-		penable_s <= '1';
+		-- Send word to DUV's Rx
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '0';                -- Start bit
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '1';                -- xAA
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '0';                --
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '1';                --
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '0';                --
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '1';                --
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '0';                --
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '1';                -- 
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '0';                -- 
+		wait for UART_FBAUD_SIM_c * clk_period;
+		uart_in_s <= '1';                -- Stop bit
 		
-		-- Idle phase
-		wait for clk_period;
-		psel_s    <= '0';
-		penable_s <= '0';
-		pwrite_s  <= '0';
+		-- Stop process
+		wait until rstn = '0'; 
+		
+	end process;
+	
+	-- Does not work with generic NUM_PERIPH, DATA_WIDTH and ADDR_WIDTH
+	APB_PROC: process
+	begin
+		wait until rstn = '1';
+		-- Test Rx
+		wait until int_s(0) = '1';
 		
 		-- APB read transaction
 		-- Setup phase
-		wait for clk_period;
-		paddr_s   <= x"00000008";
+		paddr_s   <= x"00000000";
 		psel_s    <= '1';
 		
 		-- Access phase
@@ -121,7 +136,25 @@ begin
 		psel_s    <= '0';
 		penable_s <= '0';
 		
-		wait until pready_s = '1';
+		-- -- Test Tx
+		-- -- APB write transaction
+		-- -- Setup phase
+		-- wait for clk_period;
+		-- paddr_s   <= x"00000000";
+		-- pwrite_S  <= '1';
+		-- psel_s    <= '1';
+		-- penable_s <= '0';
+		-- pwdata_s  <= x"00000055";
+		
+		-- -- Access phase
+		-- wait for clk_period;
+		-- penable_s <= '1';
+		
+		-- -- Idle phase
+		-- wait for clk_period;
+		-- psel_s    <= '0';
+		-- penable_s <= '0';
+		-- pwrite_s  <= '0';
 		
 	end process;
 	
