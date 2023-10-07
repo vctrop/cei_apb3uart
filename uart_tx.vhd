@@ -37,7 +37,7 @@ entity uart_tx is
 end uart_tx;
 
 architecture behavioral of uart_tx is
-	type state_t is (SSidle, Sstart_bit, Sdata_bits, Sstop_bit);
+	type state_t is (Sidle, Sstart_bit, Sdata_bits, Sstop_bit);
 	signal reg_state : state_t;
 
 	signal clk_counter_s : integer range 0 to 65535;
@@ -67,7 +67,7 @@ begin
 		if rst = '1' then
 			clk_counter_s <= 0;
 		elsif rising_edge(clk) then
-			if reg_state /= SSidle then
+			if reg_state /= Sidle then
 				if clk_counter_s = to_integer(unsigned(reg_freq_baud)) - 1 then
 					clk_counter_s <= 0;
 				else
@@ -85,17 +85,17 @@ begin
 		if rst = '1' then
 			bit_counter_s <= 0;
 			reg_tx_data <= (others=>'0');
-			reg_state <= SSidle;
+			reg_state <= Sidle;
 
 		elsif rising_edge(clk) then
 			case reg_state is
-				when SSidle =>
+				when Sidle =>
 					bit_counter_s <= 0;
 					if data_av_i = '1' and address_i = TX_DATA_ADDR then
 							reg_tx_data <= data_i(7 downto 0);
 							reg_state <= Sstart_bit;
 					else
-							reg_state <= SSidle;
+							reg_state <= Sidle;
 					end if;
 
 				when Sstart_bit =>
@@ -118,7 +118,7 @@ begin
 							
 				when Sstop_bit =>
 					if clk_counter_s = to_integer(unsigned(reg_freq_baud)) - 1 then
-						reg_state <= SSidle;
+						reg_state <= Sidle;
 					else
 						reg_state <= Sstop_bit;
 					end if;
@@ -130,8 +130,8 @@ begin
 	-- Entity output
 	tx_o <= '0' when reg_state = Sstart_bit else 
 				reg_tx_data(0) when reg_state = Sdata_bits else
-				'1';    -- SSidle, Sstop_bit
+				'1';    -- Sidle, Sstop_bit
 					
-	ready_o <= '1' when reg_state = SSidle else '0';
+	ready_o <= '1' when reg_state = Sidle else '0';
 
 end behavioral;
