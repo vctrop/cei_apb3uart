@@ -6,7 +6,8 @@
 -- CREATED      : May, 2016                                                  --
 -- VERSION      : 1.1                                                        --
 -- HISTORY      : Version 1.0 - May, 2016 - Everton Alceu Carara             --
---              : Version 1.1 - June, 2019 - Victor O. Costa, Julio Costella --         
+--              : Version 1.1 - June, 2019 - Victor O. Costa, Julio Costella --
+--              : Version 1.2 - October, 2023 - Victor O. Costa              --         
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -16,6 +17,7 @@ library ieee;
 entity uart_tx is
 	generic(
 		-- Baud divider default value should be floor(freq/baudrate), or 1 for simulation
+		-- BAUD_DIV_DEFAULT : std_logic_vector(15 downto 0) := x"0364";    -- 115200 @ 100 MHz
 		BAUD_DIV_DEFAULT : std_logic_vector(15 downto 0) := x"0001";
 		--
 		BAUD_DIV_ADDR : std_logic_vector(1 downto 0);
@@ -36,8 +38,8 @@ end uart_tx;
 
 architecture behavioral of uart_tx is
 	type state_t is (SSidle, Sstart_bit, Sdata_bits, Sstop_bit);
-	signal reg_state: state_t;
-		
+	signal reg_state : state_t;
+
 	signal clk_counter_s : integer range 0 to 65535;
 	signal bit_counter_s : integer range 0 to 8;
 	signal reg_tx_data   : std_logic_vector(7 downto 0);
@@ -45,9 +47,8 @@ architecture behavioral of uart_tx is
 
 begin
 
-	-- User-defined registers:
-	-- Baud rate divider register
-	process(clk,rst)
+	-- Baud rate divider
+	process(clk)
 	begin
 		if rising_edge(clk) then
 			if rst = '1' then
@@ -61,7 +62,7 @@ begin
 	end process;
 
 	-- Clock counter
-	process(clk,rst)
+	process(clk)
 	begin
 		if rst = '1' then
 			clk_counter_s <= 0;
@@ -79,7 +80,7 @@ begin
 	end process;
 
 	-- Data transmission state machine
-	process(clk,rst)
+	process(clk)
 	begin
 		if rst = '1' then
 			bit_counter_s <= 0;

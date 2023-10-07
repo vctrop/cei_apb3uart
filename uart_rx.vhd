@@ -5,8 +5,9 @@
 -- AUTHOR       : Everton Alceu Carara                                       --
 -- CREATED      : May, 2016                                                  --
 -- VERSION      : 1.1                                                        --
--- HISTORY      : Version 1.0 - May, 2016 - Everton Alceu Carara             --    
---              : Version 1.1 - June, 2019 - Victor O. Costa, Julio Costella --       
+-- HISTORY      : Version 1.0 - May, 2016 - Everton Alceu Carara             --
+--              : Version 1.1 - June, 2019 - Victor O. Costa, Julio Costella --
+--              : Version 1.2 - October, 2023 - Victor O. Costa              --         
 -------------------------------------------------------------------------------
 
 library ieee;
@@ -16,6 +17,7 @@ library ieee;
 entity uart_rx is
 	generic(
 		-- Baud divider default value should be floor(freq/baudrate), or 1 for simulation
+		-- BAUD_DIV_DEFAULT : std_logic_vector(15 downto 0) := x"0364"    -- 115200 @ 100 MHz
 		BAUD_DIV_DEFAULT : std_logic_vector(15 downto 0) := x"0001"
 	);
 	port(
@@ -44,8 +46,7 @@ architecture behavioral of uart_rx is
 
 begin
 
-	-- User-defined registers:
-	-- Baud rate divider register
+	-- Baud rate divider
 	process(clk)
 	begin
 		if rising_edge(clk) then
@@ -81,7 +82,7 @@ begin
 	-- Data reception state machine
 	sampling_s <= '1' when clk_counter_s = to_integer(unsigned(reg_freq_baud))/2 else '0';  
 
-	process(clk,rst)
+	process(clk)
 	begin
 		if rising_edge(clk) then
 			if rst = '1' then
