@@ -24,13 +24,10 @@ package uart_constants_pkg is
 	constant PERIPH_INT_WIDTH_c : natural := 2;
 	
 	-- Memory-mapped register widths
-	constant UART_FBAUD_WIDTH_c : natural := 16;
 	constant UART_DATA_WIDTH_c  : natural := 8;
-	-- 
-	constant UART_FBAUD_MAX_c   : natural := 2 ** UART_FBAUD_WIDTH_c - 1;
-	constant UART_DATA_MAX_c    : natural := 2 ** UART_DATA_WIDTH_c - 1;
+	constant UART_FBAUD_WIDTH_c : natural := 16;
 	-- Frequency/baud value for simulation
-	constant UART_FBAUD_SIM_c   : natural := 2;                           
+	constant UART_FBAUD_SIM_c   : natural := 4;                           
 	
 	-- Memory-mapped register addresses
 	-- Addresses are aligned with 32-bit words 

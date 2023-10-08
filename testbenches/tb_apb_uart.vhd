@@ -51,15 +51,16 @@ begin
 	rstn <= '1' after 5*clk_period;
 	
 	DUV: entity work.apb_uart(behavioral)
-	-- generic map(
-		-- -- Width of the APB data bus
-		-- APB_DATA_WIDTH => DATA_WIDTH_c,
-		-- -- Width of the address bus
-		-- APB_ADDR_WIDTH => ADDR_WIDTH_c,
-		-- -- Reset values for the peripheral's memory-mapped registers
-		-- UART_BAUD_RSTV => (0 => '1', others => 0),
-		-- UART_DATA_RSTV => (others => '0')
-	-- )
+	generic map(
+		-- Bus widths
+		APB_DATA_WIDTH   => APB_DATA_WIDTH_c,     -- Width of the APB data bus
+		APB_ADDR_WIDTH   => APB_ADDR_WIDTH_c,     -- Width of the address bus
+		UART_DATA_WIDTH  => UART_DATA_WIDTH_c,    -- Width of the APB data bus
+		UART_FBAUD_WIDTH => UART_FBAUD_WIDTH_c,   -- Width of the address bus
+		-- Reset value for the frequency/baud register
+		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c
+		--UART_FBAUD_RSTVL => 100
+	)
 	port map(
 		-- Clock and negated reset
 		clk       => clk,
@@ -83,49 +84,74 @@ begin
 		int_o     => int_s
 	);
 	
-	UART_PROC: process
-	begin
-		wait until rstn = '1';
-		wait for clk_period;
+	-- UART_PROC: process
+	-- begin
+		-- wait until rstn = '1';
+		-- wait for clk_period;
 		
-		-- Send word to DUV's Rx
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '0';                -- Start bit
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '1';                -- xAA
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '0';                --
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '1';                --
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '0';                --
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '1';                --
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '0';                --
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '1';                -- 
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '0';                -- 
-		wait for UART_FBAUD_SIM_c * clk_period;
-		uart_in_s <= '1';                -- Stop bit
+		-- -- Send word to DUV's Rx
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '0';                -- Start bit
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '1';                -- xAA
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '0';                --
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '1';                --
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '0';                --
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '1';                --
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '0';                --
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '1';                -- 
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '0';                -- 
+		-- wait for UART_FBAUD_SIM_c * clk_period;
+		-- uart_in_s <= '1';                -- Stop bit
 		
-		-- Stop process
-		wait until rstn = '0'; 
+		-- -- Stop process
+		-- wait until rstn = '0'; 
 		
-	end process;
+	-- end process;
 	
 	-- Does not work with generic NUM_PERIPH, DATA_WIDTH and ADDR_WIDTH
+	uart_in_s <= uart_out_s;
+	
 	APB_PROC: process
 	begin
 		wait until rstn = '1';
-		-- Test Rx
+		
+		-- Test UART in loopback mode 
+		-- APB write to the data register
+		-- Setup phase
+		wait for clk_period;
+		paddr_s   <= x"00000000";
+		pwrite_S  <= '1';
+		psel_s    <= '1';
+		penable_s <= '0';
+		pwdata_s  <= x"00000055";
+		
+		-- Access phase
+		wait for clk_period;
+		penable_s <= '1';
+		
+		-- Idle phase
+		wait for clk_period;
+		psel_s    <= '0';
+		penable_s <= '0';
+		pwrite_s  <= '0';
+		
+		-- Read from data register
 		wait until int_s(0) = '1';
 		
-		-- APB read transaction
+		-- APB read from the data register
 		-- Setup phase
 		paddr_s   <= x"00000000";
+		pwrite_S  <= '0';
 		psel_s    <= '1';
+		penable_s <= '0';
 		
 		-- Access phase
 		wait for clk_period;
@@ -135,26 +161,6 @@ begin
 		wait for clk_period;
 		psel_s    <= '0';
 		penable_s <= '0';
-		
-		-- -- Test Tx
-		-- -- APB write transaction
-		-- -- Setup phase
-		-- wait for clk_period;
-		-- paddr_s   <= x"00000000";
-		-- pwrite_S  <= '1';
-		-- psel_s    <= '1';
-		-- penable_s <= '0';
-		-- pwdata_s  <= x"00000055";
-		
-		-- -- Access phase
-		-- wait for clk_period;
-		-- penable_s <= '1';
-		
-		-- -- Idle phase
-		-- wait for clk_period;
-		-- psel_s    <= '0';
-		-- penable_s <= '0';
-		-- pwrite_s  <= '0';
 		
 	end process;
 	
