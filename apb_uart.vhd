@@ -20,20 +20,23 @@ use work.uart_constants_pkg.all;
 entity apb_uart is
 	generic (
 		-- Bus widths
-		APB_DATA_WIDTH   : natural range 0 to 32 := APB_DATA_WIDTH_c;     -- Width of the APB data bus
-		APB_ADDR_WIDTH   : natural range 0 to 32 := APB_ADDR_WIDTH_c;     -- Width of the address bus
+		APB_DATA_WIDTH    : natural range 0 to 32 := APB_DATA_WIDTH_c;     -- Width of the APB data bus
+		APB_ADDR_WIDTH    : natural range 0 to 32 := APB_ADDR_WIDTH_c;     -- Width of the address bus
 		-- Memory-mapped registers
 		-- Register widths
-		UART_DATA_WIDTH  : natural range 0 to 32 := UART_DATA_WIDTH_c;    -- Width of the UART words
-		UART_CTRL_WIDTH  : natural range 0 to 32 := UART_CTRL_WIDTH_c;    -- Width of the FBAUD register
-		UART_FBAUD_WIDTH : natural range 0 to 32 := UART_FBAUD_WIDTH_c;   -- Width of the FBAUD register
+		UART_DATA_WIDTH   : natural range 0 to 32 := UART_DATA_WIDTH_c;    -- Width of the UART words
+		UART_FBAUD_WIDTH  : natural range 0 to 32 := UART_FBAUD_WIDTH_c;   -- Width of the FBAUD register
+		UART_CTRL_WIDTH   : natural range 0 to 32 := UART_CTRL_WIDTH_c;    -- Width of the FBAUD register
+		-- UART_STATUS_WIDTH : natural range 0 to 32 := UART_STATUS_WIDTH_c;  -- Width of the FBAUD register
 		-- Register addresses
-		UART_DATA_ADDR   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0)  := UART_DATA_ADDR_c;
-		UART_CTRL_ADDR   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0)  := UART_CTRL_ADDR_c;
-		UART_FBAUD_ADDR  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0)  := UART_FBAUD_ADDR_c;
+		UART_DATA_ADDR    : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_DATA_ADDR_c;
+		UART_FBAUD_ADDR   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_FBAUD_ADDR_c;
+		UART_CTRL_ADDR    : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_CTRL_ADDR_c;
+		-- UART_STATUS_ADDR  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0)    := UART_FBAUD_ADDR_c;
 		-- Register reset values
-		UART_FBAUD_RSTVL : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := UART_FBAUD_SIM_c;
-		UART_CTRL_RSTVL  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := UART_CTRL_RSTVL_c
+		UART_FBAUD_RSTVL  : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := UART_FBAUD_SIM_c;
+		UART_CTRL_RSTVL   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := UART_CTRL_RSTVL_c
+		-- UART_STATUS_RSTVL : std_logic_vector(UART_STATUS_WIDTH_c-1 downto 0) := UART_STATUS_RSTVL_c
 	);
 	port(
 		-- Clock and negated reset
@@ -71,26 +74,32 @@ architecture behavioral of apb_uart is
 	-- Memory-mapped registers 
 	-- Addresses are aligned with 32-bit words 
 	-- 0x00 - UART data transmission register (8 bits)
-	-- 0x04 - UART control register (1 bit)
-	---- [0] - Stop bit: LOW for one, high for TWO stop bits
-	---- [1] - Parity enable: LOW for no parity, HIGH for parity.
-	---- [2] - Parity type: LOW for even, HIGH for odd.
-	-- 0x08 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
-	-- 0x0C (future) UART status register
+	-- 0x04 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
+	-- 0x08 - UART control register (1 bit)
+	---- [0] Stop bit: LOW for one, high for TWO stop bits.
+	---- [1] Parity enable: LOW for [no parity bit], HIGH for [parity bit].
+	---- [2] Parity select: LOW for odd, HIGH for even.
+	-- 0x0C - UART status register
+	---- [0] Error cause: LOW for none, HIGH for parity error
 	signal reg_data_tx : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
 	signal reg_data_rx : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
-	signal reg_control : std_logic_vector(UART_CTRL_WIDTH-1 downto 0);
 	signal reg_fbaud   : integer range 0 to 2**UART_FBAUD_WIDTH - 1;
-	-- Associated signals
-	signal data_rx_expand_s : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
-	signal fbaud_expand_s   : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
+	signal reg_control : std_logic_vector(UART_CTRL_WIDTH-1 downto 0);
+	-- signal reg_status  : std_logic_vector(UART_STATUS_WIDTH-1 downto 0););
 	-- Control register outline
 	signal ctrl_stop_s        : std_logic;             -- reg_control(0)
 	signal ctrl_parity_en_s   : std_logic;             -- reg_control(1)
 	signal ctrl_parity_type_s : std_logic;             -- reg_control(2)
+	-- Status register outline
+	-- signal status_error_cause_s : std_logic;           -- reg_status(0)
+	-- Signals to expand UART registers to APB data bus width
+	signal expand_data_rx_s : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
+	signal expand_fbaud_s   : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
+	signal expand_control_s : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
+	-- signal expand_status_s  : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
 	
 	-- UART
-	-- Tx and Rx finite state machines
+	-- tx and rx finite state machines
 	type fsm_state_uart_t is (Suart_idle, Suart_start_bit, Suart_data_bits, Suart_parity_bit, Suart_stop_bit);
 	signal reg_state_tx   : fsm_state_uart_t;
 	signal reg_state_rx   : fsm_state_uart_t;
@@ -109,9 +118,9 @@ architecture behavioral of apb_uart is
 	signal reg_bit_count_tx : integer range 0 to 8;						-- MODIFICAR PARA PARIDADE
 	signal reg_bit_count_rx : integer range 0 to 8;           -- MODIFICAR PARA PARIDADE
 	
-	-- UART Rx sampling is preceded by a metastability filter that is always enabled
+	-- UART rx sampling is preceded by a metastability filter that is always enabled
 	-- The filter feeds a 3-bit shift register which samples rx_i at 8x the baud rate
-	-- Before feeding the UART Rx logic, the 3-bit shift register feeds a majority voter
+	-- Before feeding the UART rx logic, the 3-bit shift register feeds a majority voter
 	signal reg_mfilter_rx : std_logic_vector(1 downto 0);              -- 2-FF metastability filter
 	signal reg_shift_mv   : std_logic_vector(2 downto 0);              -- Shift register with Fs=8xBaudRate
 	signal mv_out_s       : std_logic;                                 -- Majority voter of the 3-bit shift register
@@ -134,8 +143,9 @@ begin
 			if rstn = '0' then
 				-- Memory-mapped registers driven by APB
 				reg_data_tx <= (others => '0');
-				reg_control <= UART_CTRL_RSTVL;
 				reg_fbaud   <= UART_FBAUD_RSTVL;
+				reg_control <= UART_CTRL_RSTVL;
+				-- reg_status  <= UART_STATUS_RSTVL;
 				-- State register
 				reg_state_apb <= Sapb_idle;
 			else
@@ -156,15 +166,15 @@ begin
 					when Sapb_setup =>
 					
 						-- APB writes to memory-mapped registers
-						-- UART data Tx register
+						-- UART data tx register
 						if (penable_i and pwrite_i) = '1' and paddr_i = UART_DATA_ADDR then
 							reg_data_tx <= pwdata_i(UART_DATA_WIDTH-1 downto 0);
-						-- UART control register
-						elsif (penable_i and pwrite_i) = '1' and paddr_i = UART_CTRL_ADDR then
-							reg_control <= pwdata_i(UART_CTRL_WIDTH-1 downto 0);
 						-- UART frequency/baud ratio register
 						elsif (penable_i and pwrite_i) = '1' and paddr_i = UART_FBAUD_ADDR then
 							reg_fbaud <= to_integer(unsigned(pwdata_i(UART_FBAUD_WIDTH-1 downto 0)));
+						-- UART control register
+						elsif (penable_i and pwrite_i) = '1' and paddr_i = UART_CTRL_ADDR then
+							reg_control <= pwdata_i(UART_CTRL_WIDTH-1 downto 0);
 						end if;
 							
 						reg_state_apb <= Sapb_access;
@@ -178,12 +188,12 @@ begin
 		end if;
 	end process;
 
-	-- UART Tx FSM
+	-- UART tx FSM
 	UARTTX_FSM: process(clk)
 	begin
 		if rising_edge(clk) then
 			if rstn = '0' then
-				-- UART Tx registers
+				-- UART tx registers
 				reg_shift_tx <= (others => '0');
 				reg_clk_count_tx <= 0;
 				reg_bit_count_tx <= 0;
@@ -214,7 +224,7 @@ begin
 							reg_state_tx <= Suart_start_bit;
 							reg_clk_count_tx <= reg_clk_count_tx + 1;
 						else
-							-- Copy Tx data to shift register 
+							-- Copy tx data to shift register 
 							reg_shift_tx <= reg_data_tx;
 							reg_state_tx <= Suart_data_bits;
 							reg_clk_count_tx <= 0;
@@ -232,7 +242,7 @@ begin
 						if reg_clk_count_tx /= reg_fbaud - 1 then
 							reg_clk_count_tx <= reg_clk_count_tx + 1;
 						else
-							-- Shift Tx register
+							-- Shift tx register
 							reg_shift_tx <= '0' & reg_shift_tx(UART_DATA_WIDTH-1 downto 1);
 							-- Bit counter increment
 							reg_bit_count_tx <= reg_bit_count_tx + 1;
@@ -295,8 +305,8 @@ begin
 		end if;
 	end process;
 	
-	-- UART Rx FSM
-	-- Samples the Rx signal;
+	-- UART rx FSM
+	-- Samples the rx signal;
 	-- FUTURE: sample multiple times and do a voting
 	rx_sampling_s <= '1' when rstn = '1' and reg_clk_count_rx = reg_fbaud/2 else '0';
 
@@ -304,9 +314,9 @@ begin
 	begin
 		if rising_edge(clk) then
 			if rstn = '0' then
-				-- Memory-mapped register driven by UART Rx (read-only from APB)
+				-- Memory-mapped register driven by UART rx (read-only from APB)
 				reg_data_rx <= (others => '0');
-				-- UART Rx registers
+				-- UART rx registers
 				reg_shift_rx <= (others => '0');
 				reg_parity_rx_computed <= '0';
 				-- FSM state register
@@ -410,7 +420,7 @@ begin
 		end if;
 	end process;
 
-	-- Rx sampling
+	-- rx sampling
 	-- Majority voter from 3-bit sampling shift register
 	mv_out_s <= (reg_shift_mv(0) and reg_shift_mv(1)) or 
 							(reg_shift_mv(1) and reg_shift_mv(2)) or
@@ -421,7 +431,7 @@ begin
 		if rising_edge(clk) then
 			if rstn = '0' then
 				-- Metastability filter and voter shift register must start w/ all ones
-				-- Else, UART Rx will get a spurious START BIT after rstn goes high
+				-- Else, UART rx will get a spurious START BIT after rstn goes high
 				reg_mfilter_rx <= (others => '1');
 				reg_shift_mv <= (others => '1');
 				reg_clk_count_fs <= 0;
@@ -447,37 +457,50 @@ begin
 	ctrl_stop_s        <= reg_control(0);	
 	ctrl_parity_en_s   <= reg_control(1);
 	ctrl_parity_type_s <= reg_control(2);
+	
+	-- Status register must be driven at APB write transfers and both UART tx and rx
+	-- Therefore, it must be driven by a separate process
+	-- status_source_s <= pwdata_i(UART_STATUS_WIDTH-1 downto 0) when XXXX else
+									   -- reg_status or (0 => '1', others => '0');                -- FUTURE: implement status masks
+	-- status_error_cause_s <= reg_status(0);
 
 	-- Drive APB outputs
 	-- Assembly APB-width signals
-	data_rx_expand_s(APB_DATA_WIDTH-1 downto UART_DATA_WIDTH_c) <= (others => '0');
-	data_rx_expand_s(UART_DATA_WIDTH-1 downto 0)                <= reg_data_rx;
-	fbaud_expand_s(APB_DATA_WIDTH-1 downto UART_FBAUD_WIDTH_c)  <= (others => '0');
-	fbaud_expand_s(UART_FBAUD_WIDTH-1 downto 0)                 <= std_logic_vector(to_unsigned(reg_fbaud, UART_FBAUD_WIDTH));
+	expand_data_rx_s(APB_DATA_WIDTH-1 downto UART_DATA_WIDTH)  <= (others => '0');
+	expand_fbaud_s(APB_DATA_WIDTH-1 downto UART_FBAUD_WIDTH)   <= (others => '0');
+	expand_control_s(APB_DATA_WIDTH-1 downto UART_CTRL_WIDTH)  <= (others => '0');
+	-- expand_status_s(APB_DATA_WIDTH-1 downto UART_STATUS_WIDTH) <= (others => '0');
+	expand_data_rx_s(UART_DATA_WIDTH-1 downto 0)  <= reg_data_rx;
+	expand_fbaud_s(UART_FBAUD_WIDTH-1 downto 0)   <= std_logic_vector(to_unsigned(reg_fbaud, UART_FBAUD_WIDTH));
+	expand_control_s(UART_CTRL_WIDTH-1 downto 0)  <= reg_control;
+	-- expand_status_s(UART_STATUS_WIDTH-1 downto 0) <= reg_status;
 	
-	prdata_o  <= data_rx_expand_s when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_DATA_ADDR else
-	             fbaud_expand_s    when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_FBAUD_ADDR else
+	-- Read data bus
+	prdata_o  <= expand_data_rx_s when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_DATA_ADDR else
+	             expand_fbaud_s   when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_FBAUD_ADDR else
+	             expand_control_s when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_CTRL_ADDR else
+	             -- expand_status_s  when reg_state_apb = Sapb_setup and pwrite_i = '0' and reg_paddr = UART_STATUS_ADDR else
 	             (others => '0');
   
 	-- Peripherals with fixed 2-cycle access can tie PREADY high
 	pready_o <= '1';
 	
-	-- 
+	-- Error output
 	address_exists_s <= '1' when reg_state_apb = Sapb_setup and (reg_paddr = UART_FBAUD_ADDR or 
 	                                                             reg_paddr = UART_DATA_ADDR) else '0';
 	pslverr_o        <= '1' when reg_state_apb = Sapb_setup and address_exists_s = '0' else '0';         -- Error: ADDRESS DOES NOT EXIST
 	                             
 	-- Drive UART
-	-- UART Tx
+	-- UART tx
 	tx_o <= '0' when reg_state_tx = Suart_start_bit else                 -- Start bit
 	        reg_shift_tx(0) when reg_state_tx = Suart_data_bits else     -- Data bits
 					reg_parity_tx when reg_state_tx = Suart_parity_bit else 
 					'1';                                                         -- Stop bit
 	
 	-- Interrupts
-	-- 0: Rx interrupt is set during a single cycle, indicating that there is a byte available at Rx
-	-- 1: Tx interrupt is set during a single cycle, indicating the end of a transmission.
-	-- 2: Rx parity error
+	-- 0: rx interrupt is set during a single cycle, indicating that there is a byte available at rx
+	-- 1: tx interrupt is set during a single cycle, indicating the end of a transmission.
+	-- 2: rx parity error
 	int_o(0) <= rx_sampling_s when reg_state_rx = Suart_stop_bit else '0';
 	int_o(1) <= '1' when (reg_state_tx = Suart_stop_bit and ctrl_stop_s = '0' and reg_clk_count_tx = reg_fbaud - 1) or
                        (reg_state_tx = Suart_stop_bit and ctrl_stop_s = '1' and reg_clk_count_tx = (2 * reg_fbaud) - 1) else '0'; 

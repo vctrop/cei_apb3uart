@@ -26,23 +26,27 @@ package uart_constants_pkg is
 	-- Memory-mapped registers 
 	-- Addresses are aligned with 32-bit words 
 	-- 0x00 - UART data transmission register (8 bits)
-	-- 0x04 - UART control register (1 bit)
-	---- [0] - Stop bit: LOW for one, high for TWO stop bits.
-	---- [1] - Parity enable: LOW for [no parity bit], HIGH for [parity bit].
-	---- [2] - Parity select: LOW for odd, HIGH for even.
-	-- 0x08 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
-	-- 0x0C (future) UART status register
+	-- 0x04 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
+	-- 0x08 - UART control register (1 bit)
+	---- [0] Stop bit: LOW for one, high for TWO stop bits.
+	---- [1] Parity enable: LOW for [no parity bit], HIGH for [parity bit].
+	---- [2] Parity select: LOW for odd, HIGH for even.
+	-- 0x0C - UART status register
+	---- [0] Error cause: LOW for none, HIGH for rx parity error
 	-- Register widths
-	constant UART_DATA_WIDTH_c  : natural := 8;
-	constant UART_CTRL_WIDTH_c  : natural := 3;
-	constant UART_FBAUD_WIDTH_c : natural := 16;
+	constant UART_DATA_WIDTH_c   : natural := 8;
+	constant UART_FBAUD_WIDTH_c  : natural := 16;
+	constant UART_CTRL_WIDTH_c   : natural := 3;
+	-- constant UART_STATUS_WIDTH_c : natural := 1;
 	-- Register addresses
-	constant UART_DATA_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000000";
-	constant UART_CTRL_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000004";
-	constant UART_FBAUD_ADDR_c  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
+	constant UART_DATA_ADDR_c    : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000000";
+	constant UART_FBAUD_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000004";
+	constant UART_CTRL_ADDR_c    : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
+	-- constant UART_STATUS_ADDR_c  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"0000000C";
 	-- Register reset values    
-	constant UART_FBAUD_SIM_c   : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
-	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "000"; 
+	constant UART_FBAUD_SIM_c    : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
+	constant UART_CTRL_RSTVL_c   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "000"; 
+	-- constant UART_STATUS_RSTVL_c : std_logic_vector(UART_STATUS_WIDTH_c-1 downto 0) := "1"; 
 	
 end package uart_constants_pkg;
 
