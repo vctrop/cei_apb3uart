@@ -6,7 +6,7 @@
 -- WARRANTY, INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY
 -- AND FITNESS FOR A PARTICULAR PURPOSE. Please see the CERN-OHL-S v2
 -- for applicable conditions.
--- Source location: https://github.com/vctrop/AMBA_playground
+-- Source location: https://github.com/vctrop/apb_uart
 -- As per CERN-OHL-S v2 section 4, should You produce hardware based on
 -- these sources, You must maintain the Source Location visible on any
 -- product you make using this documentation.
@@ -42,7 +42,7 @@ package uart_constants_pkg is
 	constant UART_FBAUD_ADDR_c  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
 	-- Register reset values    
 	constant UART_FBAUD_SIM_c   : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
-	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "110"; 
+	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "000"; 
 	
 end package uart_constants_pkg;
 
