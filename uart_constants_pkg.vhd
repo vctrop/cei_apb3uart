@@ -23,21 +23,25 @@ package uart_constants_pkg is
 	-- Peripheral interrupt width
 	constant PERIPH_INT_WIDTH_c : natural := 2;
 	
-	-- Memory-mapped register widths
-	constant UART_DATA_WIDTH_c  : natural := 8;
-	constant UART_FBAUD_WIDTH_c : natural := 16;
-	-- Frequency/baud value for simulation
-	constant UART_FBAUD_SIM_c   : natural := 4;                           
-	
-	-- Memory-mapped register addresses
+	-- Memory-mapped registers 
 	-- Addresses are aligned with 32-bit words 
 	-- 0x00 - UART data transmission register (8 bits)
-	-- 0x04 - UART frequency/baud ratio register: threshold for clock counter (16 bits) - floor(clk_freq/baud_rate)
-	-- 0x08 (future) UART status register
-	-- 0x0C (future) UART configuration register
-	constant UART_DATA_ADDR_c : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000000";
-	constant UART_BAUD_ADDR_c : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000004";
-
+	-- 0x04 - UART control register (1 bit)
+	---- [0] - Stop bit: LOW for one, high for TWO stop bits
+	-- 0x08 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
+	-- 0x0C (future) UART status register
+	-- Register widths
+	constant UART_DATA_WIDTH_c  : natural := 8;
+	constant UART_CTRL_WIDTH_c  : natural := 1;
+	constant UART_FBAUD_WIDTH_c : natural := 16;
+	-- Register addresses
+	constant UART_DATA_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000000";
+	constant UART_CTRL_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000004";
+	constant UART_BAUD_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
+	-- Register reset values
+	constant UART_FBAUD_SIM_c   : std_logic_vector(UART_FBAUD_WIDTH_c-1 downto 0) := x"0003";
+	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "0"; 
+	
 end package uart_constants_pkg;
 
 
