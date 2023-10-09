@@ -40,8 +40,8 @@ architecture behavioral of tb_apb_uart is
 	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := (others => '0');
 	
 	-- UART signals
-	signal uart_in_s : std_logic := '0';
-	signal uart_out_s : std_logic;
+	signal uart_rxi_s : std_logic := '0';
+	signal uart_txo_s : std_logic;
 	signal int_s : std_logic_vector(PERIPH_INT_WIDTH_c-1 downto 0);
 	
 	
@@ -77,47 +77,15 @@ begin
 		pslverr_o => pslverr_s,
 		
 		-- UART 
-		uart_rx_i      => uart_in_s,
-		uart_tx_o      => uart_out_s,
+		rx_i      => uart_rxi_s,
+		tx_o      => uart_txo_s,
 		
 		-- Interrupt
 		int_o     => int_s
 	);
 	
-	-- UART_PROC: process
-	-- begin
-		-- wait until rstn = '1';
-		-- wait for clk_period;
-		
-		-- -- Send word to DUV's Rx
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '0';                -- Start bit
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '1';                -- xAA
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '0';                --
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '1';                --
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '0';                --
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '1';                --
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '0';                --
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '1';                -- 
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '0';                -- 
-		-- wait for UART_FBAUD_SIM_c * clk_period;
-		-- uart_in_s <= '1';                -- Stop bit
-		
-		-- -- Stop process
-		-- wait until rstn = '0'; 
-		
-	-- end process;
-	
 	-- Does not work with generic NUM_PERIPH, DATA_WIDTH and ADDR_WIDTH
-	uart_in_s <= uart_out_s;
+	uart_rxi_s <= uart_txo_s;
 	
 	APB_PROC: process
 	begin
