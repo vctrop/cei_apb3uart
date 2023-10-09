@@ -13,7 +13,7 @@
 
 library ieee;
 	use ieee.std_logic_1164.all;
-	-- use ieee.numeric_std.all;
+	use ieee.numeric_std.all;
 	
 package uart_constants_pkg is
 	-- System bus widths
@@ -27,9 +27,9 @@ package uart_constants_pkg is
 	-- Addresses are aligned with 32-bit words 
 	-- 0x00 - UART data transmission register (8 bits)
 	-- 0x04 - UART control register (1 bit)
-	---- [0] - Stop bit: LOW for one, high for TWO stop bits
-	---- [1] - Parity enable: LOW for no parity, HIGH for parity.
-	---- [2] - Parity type: LOW for even, HIGH for odd.
+	---- [0] - Stop bit: LOW for one, high for TWO stop bits.
+	---- [1] - Parity enable: LOW for [no parity bit], HIGH for [parity bit].
+	---- [2] - Parity select: LOW for odd, HIGH for even.
 	-- 0x08 - UART frequency/baud ratio register: threshold for clock counter (16 bits, configurable) - floor(clk_freq/baud_rate)
 	-- 0x0C (future) UART status register
 	-- Register widths
@@ -39,10 +39,10 @@ package uart_constants_pkg is
 	-- Register addresses
 	constant UART_DATA_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000000";
 	constant UART_CTRL_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000004";
-	constant UART_BAUD_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
+	constant UART_FBAUD_ADDR_c  : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000008";
 	-- Register reset values    
-	constant UART_FBAUD_SIM_c   : std_logic_vector(UART_FBAUD_WIDTH_c-1 downto 0) := x"00FF";
-	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0)  := "000"; 
+	constant UART_FBAUD_SIM_c   : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
+	constant UART_CTRL_RSTVL_c  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "110"; 
 	
 end package uart_constants_pkg;
 
