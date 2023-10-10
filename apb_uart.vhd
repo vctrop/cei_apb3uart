@@ -105,8 +105,9 @@ architecture behavioral of apb_uart is
 	signal reg_state_rx   : fsm_state_uart_t;
 	
 	-- Clock counters to measure the duration of UART bauds (the max. value it must keep is 2*max_FBaud)
-	signal reg_clk_count_tx : integer range 0 to 2**(UART_FBAUD_WIDTH + 1) - 1;
-	signal reg_clk_count_rx : integer range 0 to 2**(UART_FBAUD_WIDTH + 1) - 1;
+	signal reg_clk_count_tx    : integer range 0 to 2**(UART_FBAUD_WIDTH + 1) - 1;
+	signal reg_clk_count_rx    : integer range 0 to 2**(UART_FBAUD_WIDTH + 1) - 1;
+	signal rx_counting_clock_s : std_logic;
 	
 	-- Shift registers which drive reg_data_tx and reg_data_rx
 	signal reg_shift_tx : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
@@ -309,6 +310,7 @@ begin
 	-- Samples the rx signal;
 	-- FUTURE: sample multiple times and do a voting
 	rx_sampling_s <= '1' when rstn = '1' and reg_clk_count_rx = reg_fbaud/2 else '0';
+	rx_counting_clock_s <= '1' when reg_clk_count_rx /= reg_fbaud - 1 else '0';
 
 	UARTRX_FSM: process(clk)
 	begin
@@ -319,6 +321,7 @@ begin
 				-- UART rx registers
 				reg_shift_rx <= (others => '0');
 				reg_parity_rx_computed <= '0';
+				reg_parity_rx_read <= '0';
 				-- FSM state register
 				reg_state_rx <= Suart_idle;
 			else
@@ -340,7 +343,7 @@ begin
 					when Suart_start_bit =>
 						-- Clock counter increment
 						-- Count up to (1/baud_rate) s
-						if reg_clk_count_rx /= reg_fbaud - 1 then
+						if rx_counting_clock_s = '1' then
 							reg_clk_count_rx <= reg_clk_count_rx + 1;
 							reg_state_rx <= Suart_start_bit;
 						else
@@ -367,18 +370,16 @@ begin
 						
 						-- Clock counter increment and reset
 						-- Count up to (1/baud_rate) s
-						if reg_clk_count_rx /= reg_fbaud - 1 then
-							reg_clk_count_rx <= reg_clk_count_rx + 1;					
+						if rx_counting_clock_s = '1' then
+							reg_clk_count_rx <= reg_clk_count_rx + 1;										
 						else
 							reg_clk_count_rx <= 0;
-							
 							-- Only verify the number of bits received at the end of the baud period
 							if reg_bit_count_rx = UART_DATA_WIDTH and ctrl_parity_en_s = '0' then
 								reg_data_rx <= reg_shift_rx;
 								reg_state_rx <= Suart_stop_bit;
 							-- 
 							elsif reg_bit_count_rx = UART_DATA_WIDTH and ctrl_parity_en_s = '1' then
-								reg_data_rx <= reg_shift_rx;
 								reg_state_rx <= Suart_parity_bit;
 							-- 
 							else
@@ -391,11 +392,16 @@ begin
 						-- Sample parity bit from the 3-bit majority voter
 						if rx_sampling_s = '1' then
 							reg_parity_rx_read <= mv_out_s;
+							
+							-- Only register rx data if parity checks OK
+							if mv_out_s = reg_parity_rx_computed then
+								reg_data_rx <= reg_shift_rx;
+							end if;
 						end if;
 						
 						-- Clock counter increment and reset
 						-- Count up to (1/baud_rate) s
-						if reg_clk_count_rx /= reg_fbaud - 1 then
+						if rx_counting_clock_s = '1' then
 							reg_clk_count_rx <= reg_clk_count_rx + 1;
 							reg_state_rx <= Suart_parity_bit;
 						else
@@ -407,7 +413,7 @@ begin
 					when Suart_stop_bit =>
 						-- Clock counter increment and reset
 						-- Count up to (1/baud_rate) s
-						if reg_clk_count_rx /= reg_fbaud - 1 then
+						if rx_counting_clock_s = '1' then
 							reg_clk_count_rx <= reg_clk_count_rx + 1;
 							reg_state_rx <= Suart_stop_bit;
 						else
@@ -447,7 +453,6 @@ begin
 					reg_shift_mv <= reg_mfilter_rx(0) & reg_shift_mv(2 downto 1);
 					reg_clk_count_fs <= 0;
 				end if;
-				
 			end if;
 		end if;
 	end process;
@@ -489,21 +494,22 @@ begin
 	address_exists_s <= '1' when reg_state_apb = Sapb_setup and (reg_paddr = UART_FBAUD_ADDR or 
 	                                                             reg_paddr = UART_DATA_ADDR) else '0';
 	pslverr_o        <= '1' when reg_state_apb = Sapb_setup and address_exists_s = '0' else '0';         -- Error: ADDRESS DOES NOT EXIST
-	                             
+
 	-- Drive UART
 	-- UART tx
 	tx_o <= '0' when reg_state_tx = Suart_start_bit else                 -- Start bit
 	        reg_shift_tx(0) when reg_state_tx = Suart_data_bits else     -- Data bits
-					reg_parity_tx when reg_state_tx = Suart_parity_bit else 
-					'1';                                                         -- Stop bit
+					-- reg_parity_tx when reg_state_tx = Suart_parity_bit else      -- Parity bit (optional: none, odd, even)
+					'1' when reg_state_tx = Suart_parity_bit else      -- Parity bit (optional: none, odd, even)
+					'1';                                                         -- Stop bit (optional: 1, 2)
 	
 	-- Interrupts
 	-- 0: rx interrupt is set during a single cycle, indicating that there is a byte available at rx
 	-- 1: tx interrupt is set during a single cycle, indicating the end of a transmission.
 	-- 2: rx parity error
-	int_o(0) <= rx_sampling_s when reg_state_rx = Suart_stop_bit else '0';
+	int_o(0) <= '1' when reg_state_rx = Suart_stop_bit and reg_parity_rx_read = reg_parity_rx_computed and rx_counting_clock_s = '0' else '0';
 	int_o(1) <= '1' when (reg_state_tx = Suart_stop_bit and ctrl_stop_s = '0' and reg_clk_count_tx = reg_fbaud - 1) or
                        (reg_state_tx = Suart_stop_bit and ctrl_stop_s = '1' and reg_clk_count_tx = (2 * reg_fbaud) - 1) else '0'; 
-	int_o(2) <= '1' when reg_state_rx = Suart_stop_bit and reg_parity_rx_computed /= reg_parity_rx_read and reg_clk_count_rx = reg_fbaud - 1 else '0';
+	int_o(2) <= '1' when reg_state_rx = Suart_stop_bit and reg_parity_rx_computed /= reg_parity_rx_read and rx_counting_clock_s = '0'  else '0';
 
 end behavioral;
