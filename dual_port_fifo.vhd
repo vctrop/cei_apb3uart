@@ -16,13 +16,13 @@ library ieee;
 	use ieee.numeric_std.all;
 
 -- work library 	
-use work.pkg_fifo_constants.all;
+	use work.pkg_uart_constants.all;
 
-entity fifo is
+entity dual_port_fifo is
 	generic (
 		-- FIFO size  = 2 ** FIFO_SIZE_E
-		FIFO_SIZE_E : natural range 0 to 7  := FIFO_SIZE_E_c;
-		FIFO_WIDTH  : natural range 1 to 32 := FIFO_WIDTH_c
+		FIFO_SIZE_E : natural range 0 to 7  := UART_FIFO_SIZE_E_c;
+		FIFO_WIDTH  : natural range 1 to 32 := UART_FIFO_WIDTH_c
 	);
 	port (
 		-- Clock and reset (active low)
@@ -30,18 +30,18 @@ entity fifo is
 		rstn    : in std_logic;
 		-- Write port
 		push_i  : in std_logic;
-		data_i  : in std_logic_vector(FIFO_WIDTH_c-1 downto 0);
+		data_i  : in std_logic_vector(UART_FIFO_WIDTH_c-1 downto 0);
 		-- Read port
 		pop_i   : in std_logic;
-		data_o  : out std_logic_vector(FIFO_WIDTH_c-1 downto 0);
+		data_o  : out std_logic_vector(UART_FIFO_WIDTH_c-1 downto 0);
 	  -- Status
 		full_o  : out std_logic;
 		empty_o : out std_logic;
-		usage_o : out std_logic_vector(FIFO_SIZE_E_c downto 0)
+		usage_o : out std_logic_vector(FIFO_SIZE_E downto 0)
 	);
-end fifo;
+end dual_port_fifo;
 
-architecture behavioral of fifo is
+architecture behavioral of dual_port_fifo is
 	-- FIFO memory declaration
 	type slv_array_t is array (natural range <>) of std_logic_vector(FIFO_WIDTH-1 downto 0); 
 	signal regs_fifo : slv_array_t(2**FIFO_SIZE_E downto 0);
@@ -49,11 +49,6 @@ architecture behavioral of fifo is
 	-- Read/write indices registers
 	signal reg_windex : unsigned(FIFO_SIZE_E-1 downto 0);
 	signal reg_rindex : unsigned(FIFO_SIZE_E-1 downto 0);
-	
-	-- -- Read/write indices registers
-	-- -- Use extra bit strategy to distinguish between fifo-empty and fifo-full conditions
-	-- signal reg_windex : unsigned(FIFO_SIZE_E downto 0);
-	-- signal reg_rindex : unsigned(FIFO_SIZE_E downto 0);
 	
 	-- FIFO usage register (goes from 0 to FIFO_SIZE)
 	signal reg_usage : unsigned(FIFO_SIZE_E downto 0);
@@ -65,13 +60,7 @@ architecture behavioral of fifo is
 begin
 	-- Determine FIFO status with FIFO usage register
 	fifo_empty_s <= '1' when reg_usage = to_unsigned(0, reg_usage'length) else '0';
-	fifo_full_s  <= '1' when reg_usage = to_unsigned(FIFO_SIZE_E**2, reg_usage'length) else '0';
-	
-	-- Determine FIFO status with the extra bit strategy
-	-- fifo_empty_s <= '1' when reg_rindex(FIFO_SIZE_E-1 downto 0) = reg_windex(FIFO_SIZE_E-2 downto 0) and
-                           -- reg_rindex(FIFO_SIZE_E)          = reg_windex(FIFO_SIZE_E-1)	else '0';
-	-- fifo_full_s  <= '1' when reg_rindex(FIFO_SIZE_E-1 downto 0) = reg_windex(FIFO_SIZE_E-2 downto 0) and
-                           -- reg_rindex(FIFO_SIZE_E)         /= reg_windex(FIFO_SIZE_E-1)	else '0';
+	fifo_full_s  <= '1' when reg_usage = to_unsigned(2**FIFO_SIZE_E, reg_usage'length) else '0';
 	
 	-- Manage FIFO push and pop
 	FIFO: process(clk)
