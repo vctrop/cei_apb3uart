@@ -15,7 +15,8 @@ library ieee;
 	use ieee.std_logic_1164.all;
 	-- use ieee.numeric_std.all;
 
-use work.uart_constants_pkg.all;
+--
+	use work.pkg_uart_constants.all;
 
 entity tb_apb_uart is
 end tb_apb_uart;
@@ -42,7 +43,7 @@ architecture behavioral of tb_apb_uart is
 	-- UART signals
 	signal uart_rxi_s : std_logic := '0';
 	signal uart_txo_s : std_logic;
-	signal int_s : std_logic_vector(PERIPH_INT_WIDTH_c-1 downto 0);
+	signal int_s      : std_logic;
 	
 	
 begin
@@ -51,16 +52,6 @@ begin
 	rstn <= '1' after 5*clk_period;
 	
 	DUV: entity work.apb_uart(behavioral)
-	generic map(
-		-- Bus widths
-		APB_DATA_WIDTH   => APB_DATA_WIDTH_c,     -- Width of the APB data bus
-		APB_ADDR_WIDTH   => APB_ADDR_WIDTH_c,     -- Width of the address bus
-		UART_DATA_WIDTH  => UART_DATA_WIDTH_c,    -- Width of the APB data bus
-		UART_FBAUD_WIDTH => UART_FBAUD_WIDTH_c,   -- Width of the address bus
-		-- Reset value for the frequency/baud register
-		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c
-		--UART_FBAUD_RSTVL => 100
-	)
 	port map(
 		-- Clock and negated reset
 		clk       => clk,
@@ -112,7 +103,7 @@ begin
 		pwrite_s  <= '0';
 		
 		-- Read from data register
-		wait until int_s(0) = '1';
+		wait until int_s = '0';
 		
 		-- APB read from the data register
 		-- Setup phase
