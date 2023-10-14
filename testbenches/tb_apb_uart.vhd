@@ -38,7 +38,7 @@ architecture behavioral of tb_apb_uart is
 	signal psel_s    : std_logic := '0';
 	signal penable_s : std_logic := '0';
 	signal pwrite_s  : std_logic := '0';
-	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := (others => '0');
+	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := x"00000055";
 	
 	-- UART signals
 	signal uart_rxi_s : std_logic := '0';
@@ -74,52 +74,55 @@ begin
 		-- Interrupt
 		int_o     => int_s
 	);
-	
+	-- Test UART in loopback mode 
 	-- Does not work with generic NUM_PERIPH, DATA_WIDTH and ADDR_WIDTH
 	uart_rxi_s <= uart_txo_s;
 	
 	APB_PROC: process
 	begin
 		wait until rstn = '1';
+			
+		-- APB writes to the data register
+		for i in 0 to 255 loop
+			-- Setup phase
+			wait for clk_period;
+			paddr_s   <= x"00000000";
+			pwrite_S  <= '1';
+			psel_s    <= '1';
+			penable_s <= '0';
+			pwdata_s  <= not pwdata_s;
+			-- Access phase
+			wait for clk_period;
+			penable_s <= '1';
+			-- Idle phase
+			wait for clk_period;
+			psel_s    <= '0';
+			penable_s <= '0';
+			pwrite_s  <= '0';	
+			
+		end loop;
 		
-		-- Test UART in loopback mode 
-		-- APB write to the data register
-		-- Setup phase
-		wait for clk_period;
-		paddr_s   <= x"00000000";
-		pwrite_S  <= '1';
-		psel_s    <= '1';
-		penable_s <= '0';
-		pwdata_s  <= x"00000055";
+
 		
-		-- Access phase
-		wait for clk_period;
-		penable_s <= '1';
-		
-		-- Idle phase
-		wait for clk_period;
-		psel_s    <= '0';
-		penable_s <= '0';
-		pwrite_s  <= '0';
-		
-		-- Read from data register
-		wait until int_s = '0';
-		
-		-- APB read from the data register
-		-- Setup phase
-		paddr_s   <= x"00000000";
-		pwrite_S  <= '0';
-		psel_s    <= '1';
-		penable_s <= '0';
-		
-		-- Access phase
-		wait for clk_period;
-		penable_s <= '1';
-		
-		-- Access phase
-		wait for clk_period;
-		psel_s    <= '0';
-		penable_s <= '0';
+		-- APB reads from the data register
+		for i in 0 to 255 loop
+			-- Wait interrupt (currently Rx fifo not empty)
+			wait until int_s = '0';
+			-- Setup phase
+			wait for clk_period;
+			paddr_s   <= x"00000000";
+			pwrite_S  <= '0';
+			psel_s    <= '1';
+			penable_s <= '0';
+			-- Access phase
+			wait for clk_period;
+			penable_s <= '1';
+			-- Idle phase
+			wait for clk_period;
+			psel_s    <= '0';
+			penable_s <= '0';
+			
+		end loop;
 		
 	end process;
 	

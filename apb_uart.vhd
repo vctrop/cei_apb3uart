@@ -341,8 +341,9 @@ begin
 						reg_clk_count_tx <= 0;
 						reg_bit_count_tx <= 0;
 						
-						-- Transmission start depends on the APB frontend
-						if (penable_i and psel_i and pwrite_i) = '1' and paddr_i = UART_DATA_ADDR then
+						-- Transmit data whenever the Tx FIFO is not empty
+						-- if (penable_i and psel_i and pwrite_i) = '1' and paddr_i = UART_DATA_ADDR then
+						if txfifo_empty_s = '0' then
 							reg_state_tx <= Suart_start_bit;
 						else 
 							reg_state_tx <= Suart_idle;

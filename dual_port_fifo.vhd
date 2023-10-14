@@ -44,9 +44,9 @@ end dual_port_fifo;
 architecture behavioral of dual_port_fifo is
 	-- FIFO memory declaration
 	type slv_array_t is array (natural range <>) of std_logic_vector(FIFO_WIDTH-1 downto 0); 
-	signal regs_fifo : slv_array_t(2**FIFO_SIZE_E downto 0);
+	signal regs_fifo : slv_array_t(2**FIFO_SIZE_E-1 downto 0);
 	
-	-- Read/write indices registers
+	-- Read/write indices registers (goes from 0 to FIFO_SIZE-1)
 	signal reg_windex : unsigned(FIFO_SIZE_E-1 downto 0);
 	signal reg_rindex : unsigned(FIFO_SIZE_E-1 downto 0);
 	

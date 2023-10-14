@@ -22,7 +22,7 @@ package pkg_uart_constants is
 	
 	-- Tx and Rx FIFOs
 	-- FIFO size's base-2 exponent (size = 2 ** size_e)
-	constant UART_FIFO_SIZE_E_c : natural := 1;
+	constant UART_FIFO_SIZE_E_c : natural := 7;
 	-- FIFO word width
 	constant UART_FIFO_WIDTH_c  : natural := 8;
 	
@@ -68,11 +68,16 @@ package pkg_uart_constants is
 	-- Control register masks
 	-- Data, error and interrupt pending registers do not have configurable reset values
 	constant UART_FBAUD_SIM_c    : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
+	-- constant UART_CTRL_RSTVL_c   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "000" &             -- Rx FIFO watermark = 0
+	                                                                                 -- "001" &             -- Tx FIFO watermark = 1
+	                                                                                 -- '0' &               -- Odd parity
+	                                                                                 -- '0' &               -- Parity enable
+	                                                                                 -- '0';                -- One stop bit
 	constant UART_CTRL_RSTVL_c   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "000" &             -- Rx FIFO watermark = 0
-	                                                                                 "001" &             -- Tx FIFO watermark = 1
+	                                                                                 "111" &             -- Tx FIFO watermark = 2**7 = 128
 	                                                                                 '0' &               -- Odd parity
-	                                                                                 '0' &               -- Parity enable
-	                                                                                 '0';                -- One stop bit
+	                                                                                 '1' &               -- Parity enable
+	                                                                                 '1';                -- 2 stop bits
 	constant UART_INTEN_RSTVL_c  : std_logic_vector(UART_INT_WIDTH_c-1 downto 0)   := "001000";         -- Only enable Rx FIFO empty interrupt
 	
 end package pkg_uart_constants;
