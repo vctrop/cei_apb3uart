@@ -84,6 +84,7 @@ begin
 			
 		-- APB writes to the data register
 		for i in 0 to 255 loop
+			
 			-- Setup phase
 			wait for clk_period;
 			paddr_s   <= x"00000000";
@@ -102,27 +103,26 @@ begin
 			
 		end loop;
 		
-
-		
-		-- APB reads from the data register
-		for i in 0 to 255 loop
-			-- Wait interrupt (currently Rx fifo not empty)
-			wait until int_s = '0';
-			-- Setup phase
-			wait for clk_period;
-			paddr_s   <= x"00000000";
-			pwrite_S  <= '0';
-			psel_s    <= '1';
-			penable_s <= '0';
-			-- Access phase
-			wait for clk_period;
-			penable_s <= '1';
-			-- Idle phase
-			wait for clk_period;
-			psel_s    <= '0';
-			penable_s <= '0';
+		-- -- APB reads from the data register
+		-- for i in 0 to 255 loop
 			
-		end loop;
+			-- -- Wait interrupt (currently Rx fifo not empty)
+			-- wait until int_s = '0';
+			-- -- Setup phase
+			-- wait for clk_period;
+			-- paddr_s   <= x"00000000";
+			-- pwrite_S  <= '0';
+			-- psel_s    <= '1';
+			-- penable_s <= '0';
+			-- -- Access phase
+			-- wait for clk_period;
+			-- penable_s <= '1';
+			-- -- Idle phase
+			-- wait for clk_period;
+			-- psel_s    <= '0';
+			-- penable_s <= '0';
+			
+		-- end loop;
 		
 	end process;
 	

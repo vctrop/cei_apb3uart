@@ -24,7 +24,7 @@ entity apb_uart is
 		APB_DATA_WIDTH    : natural range 8 to 32 := APB_DATA_WIDTH_c;
 		APB_ADDR_WIDTH    : natural range 8 to 32 := APB_ADDR_WIDTH_c;
 		-- UART FIFOs size = 2^FIFOS_SIZE_E
-		FIFOS_SIZE_E      : natural range 0 to 7  := UART_FIFO_SIZE_E_c;
+		FIFOS_SIZE_E      : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
 		-- Memory-mapped registers
 		-- Register widths
 		UART_DATA_WIDTH   : natural range 8 to 8  := UART_DATA_WIDTH_c;
@@ -88,8 +88,8 @@ architecture behavioral of apb_uart is
 	signal ctrl_stop_s        : std_logic;                        -- [0] Stop bit: LOW for one, high for TWO stop bits
 	signal ctrl_parity_en_s   : std_logic;                        -- [1] Parity enable
 	signal ctrl_parity_type_s : std_logic;                        -- [2] Parity select: LOW for odd, HIGH for even
-	signal ctrl_txfifo_wm_s   : std_logic_vector(2 downto 0);     -- [3-5] (future) Tx FIFO watermark size_e: watermark = 2^(size_e)
-	signal ctrl_rxfifo_wm_s   : std_logic_vector(2 downto 0);     -- [6-8] (future) Rx FIFO watermark size_e: watermark = 2^(size_e)
+	signal ctrl_txfifo_wm_s   : unsigned(7 downto 0);     -- [3-10] (future) Tx FIFO watermark size_e: watermark = 2^(size_e)
+	signal ctrl_rxfifo_wm_s   : unsigned(7 downto 0);     -- [11-18] (future) Rx FIFO watermark size_e: watermark = 2^(size_e)
 	
 	-- Interrupt enable register outline
 	signal inten_txfifo_full_s  : std_logic;                      -- [0] Tx FIFO full
@@ -246,30 +246,30 @@ begin
 	-- UART
 	-- FIFO interrupts
 	-- Watermark interrupt conditions
-	int_txfifo_wm_s <= '1' when unsigned(txfifo_usage_s) > unsigned(ctrl_txfifo_wm_s) else '0';
-	int_rxfifo_wm_s <= '1' when unsigned(rxfifo_usage_s) > unsigned(ctrl_rxfifo_wm_s) else '0';
+	int_txfifo_wm_s <= '1' when unsigned(txfifo_usage_s) < ctrl_txfifo_wm_s else '0';
+	int_rxfifo_wm_s <= '1' when unsigned(rxfifo_usage_s) > ctrl_rxfifo_wm_s else '0';
 	-- Assign each bit to interrupt 
-	intpend_s(0) <= '1' when (inten_txfifo_full_s and txfifo_full_s) = '1' else '0';               -- [0] Tx FIFO full
-	intpend_s(1) <= '1' when (inten_rxfifo_full_s and rxfifo_full_s) = '1' else '0';               -- [1] Rx FIFO full
-	intpend_s(2) <= '1' when (inten_txfifo_empty_s and txfifo_empty_s) = '1' else '0';             -- [2] Tx FIFO empty
-	intpend_s(3) <= '1' when (inten_rxfifo_empty_s and rxfifo_empty_s) = '1' else '0';             -- [3] Rx FIFO empty
-	intpend_s(4) <= '1' when (inten_txfifo_wm_s and int_txfifo_wm_s) = '1' else '0';               -- [4] Tx FIFO positions occupied < watermark
-	intpend_s(5) <= '1' when (inten_rxfifo_wm_s and int_rxfifo_wm_s) = '1' else '0';               -- [5] Rx FIFO positions occupied > watermark
+	intpend_s(0) <= '1' when (inten_txfifo_full_s and txfifo_full_s) = '1' else '0';              -- [0] Tx FIFO full
+	intpend_s(1) <= '1' when (inten_rxfifo_full_s and rxfifo_full_s) = '1' else '0';              -- [1] Rx FIFO full
+	intpend_s(2) <= '1' when (inten_txfifo_empty_s and txfifo_empty_s) = '1' else '0';            -- [2] Tx FIFO empty
+	intpend_s(3) <= '1' when (inten_rxfifo_empty_s and rxfifo_empty_s) = '1' else '0';            -- [3] Rx FIFO empty
+	intpend_s(4) <= '1' when (inten_txfifo_wm_s and int_txfifo_wm_s) = '1' else '0';              -- [4] Tx FIFO positions occupied < watermark
+	intpend_s(5) <= '1' when (inten_rxfifo_wm_s and int_rxfifo_wm_s) = '1' else '0';              -- [5] Rx FIFO positions occupied > watermark
 	
 	-- Discrimination of signals
 	-- Memory-mapped UART control register
 	ctrl_stop_s        <= reg_control(0);	
 	ctrl_parity_en_s   <= reg_control(1);
 	ctrl_parity_type_s <= reg_control(2);
-	ctrl_txfifo_wm_s   <= reg_control(5 downto 3);
-	ctrl_rxfifo_wm_s   <= reg_control(8 downto 6);
+	ctrl_txfifo_wm_s   <= unsigned(reg_control(10 downto 3));
+	ctrl_rxfifo_wm_s   <= unsigned(reg_control(18 downto 11));
 	-- Interrupt enable register outline
-	inten_txfifo_full_s  <= reg_inten(0);                        -- [0] Tx FIFO full
-	inten_rxfifo_full_s  <= reg_inten(1);                        -- [1] Rx FIFO full
-	inten_txfifo_empty_s <= reg_inten(2);                        -- [2] Tx FIFO empty
-	inten_rxfifo_empty_s <= reg_inten(3);                        -- [3] Rx FIFO empty
-	inten_txfifo_wm_s    <= reg_inten(4);                        -- [4] Tx FIFO positions occupied < watermark
-	inten_rxfifo_wm_s    <= reg_inten(5);                        -- [5] Rx FIFO positions occupied > watermark
+	inten_txfifo_full_s  <= reg_inten(0);                                                         -- [0] Tx FIFO full
+	inten_rxfifo_full_s  <= reg_inten(1);                                                         -- [1] Rx FIFO full
+	inten_txfifo_empty_s <= reg_inten(2);                                                         -- [2] Tx FIFO empty
+	inten_rxfifo_empty_s <= reg_inten(3);                                                         -- [3] Rx FIFO empty
+	inten_txfifo_wm_s    <= reg_inten(4);                                                         -- [4] Tx FIFO positions occupied < watermark
+	inten_rxfifo_wm_s    <= reg_inten(5);                                                         -- [5] Rx FIFO positions occupied > watermark
 	
 	-- UART Tx FIFO
 	txfifo_pop_s  <= '1' when reg_state_tx = Suart_start_bit and tx_counting_clock_s = '0' else '0';            -- Pops from Tx FIFO after the FIFO feeds the Tx shift register

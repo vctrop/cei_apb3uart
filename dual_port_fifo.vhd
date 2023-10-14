@@ -21,7 +21,7 @@ library ieee;
 entity dual_port_fifo is
 	generic (
 		-- FIFO size  = 2 ** FIFO_SIZE_E
-		FIFO_SIZE_E : natural range 0 to 7  := UART_FIFO_SIZE_E_c;
+		FIFO_SIZE_E : natural range 0 to 10 := UART_FIFO_SIZE_E_c;
 		FIFO_WIDTH  : natural range 1 to 32 := UART_FIFO_WIDTH_c
 	);
 	port (
@@ -46,11 +46,11 @@ architecture behavioral of dual_port_fifo is
 	type slv_array_t is array (natural range <>) of std_logic_vector(FIFO_WIDTH-1 downto 0); 
 	signal regs_fifo : slv_array_t(2**FIFO_SIZE_E-1 downto 0);
 	
-	-- Read/write indices registers (goes from 0 to FIFO_SIZE-1)
+	-- Read/write indices registers (counts from 0 to 2**FIFO_SIZE-1)
 	signal reg_windex : unsigned(FIFO_SIZE_E-1 downto 0);
 	signal reg_rindex : unsigned(FIFO_SIZE_E-1 downto 0);
 	
-	-- FIFO usage register (goes from 0 to FIFO_SIZE)
+	-- FIFO usage register (counts from 0 to 2**FIFO_SIZE_E)
 	signal reg_usage : unsigned(FIFO_SIZE_E downto 0);
 	
 	-- Status signals
