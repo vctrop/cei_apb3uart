@@ -5,10 +5,10 @@ library ieee;
 --
 	use work.pkg_apbuart_constants.all;
 	
-entity tb_uart_inverter is
-end tb_uart_inverter;
+entity tb_inverter_chain is
+end tb_inverter_chain;
 
-architecture behavioral of tb_uart_inverter is
+architecture behavioral of tb_inverter_chain is
 	-- Clock and reset (active low)
 	signal clk : std_logic := '0';
 	signal rstn : std_logic := '0';
@@ -25,7 +25,7 @@ architecture behavioral of tb_uart_inverter is
 	signal psel_s    : std_logic := '0';
 	signal penable_s : std_logic := '0';
 	signal pwrite_s  : std_logic := '0';
-	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := x"00000000";
+	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := x"00000055";
 	signal prdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0);
 	-- 
 	signal int_support_s : std_logic;
@@ -67,9 +67,11 @@ begin
 		int_o     => int_support_s
 	);
 
-	DUV : entity work.uart_inverter(behavioral)
+	DUV : entity work.inverter_chain(behavioral)
 	generic map(
-		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c
+		CHAIN_LENGTH     => 15,                                           -- Number of inverters in the chain
+		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c,                              -- Frequency/baud ratio of the UART controllers: floor(clk_freq/baud_rate)
+		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E_c                             -- Exponent for the UART FIFO sizes. FIFO_SIZE = 2^FIFO_SIZE_E
 	)
 	port map(
 		clk  => clk,
@@ -91,7 +93,7 @@ begin
 			pwrite_S  <= '1';
 			psel_s    <= '1';
 			penable_s <= '0';
-			pwdata_s  <= x"00000055";
+			pwdata_s  <= not pwdata_s;
 			-- Access phase
 			wait for clk_period;
 			penable_s <= '1';

@@ -38,7 +38,7 @@ architecture behavioral of tb_apb_uart is
 	signal psel_s    : std_logic := '0';
 	signal penable_s : std_logic := '0';
 	signal pwrite_s  : std_logic := '0';
-	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0) := x"00000055";
+	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0);
 	
 	-- UART signals
 	signal uart_rxi_s : std_logic := '0';
@@ -81,8 +81,8 @@ begin
 	APB_PROC: process
 	begin
 		wait until rstn = '1';
-			
-		-- APB writes to the data register
+			pwdata_s <= x"00000055";
+			-- APB writes to the data register
 		for i in 0 to 255 loop
 			
 			-- Setup phase
@@ -91,7 +91,7 @@ begin
 			pwrite_S  <= '1';
 			psel_s    <= '1';
 			penable_s <= '0';
-			pwdata_s  <= not pwdata_s;
+			pwdata_s  <= not pwdata_s;       -- Begin sending AA and getting 55
 			-- Access phase
 			wait for clk_period;
 			penable_s <= '1';

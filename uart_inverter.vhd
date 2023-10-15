@@ -25,10 +25,10 @@ entity uart_inverter is
 		-- Bus widths
 		APB_DATA_WIDTH    : natural range 8 to 32 := APB_DATA_WIDTH_c;
 		APB_ADDR_WIDTH    : natural range 8 to 32 := APB_ADDR_WIDTH_c;
-		-- UART FIFOs size = 2^FIFOS_SIZE_E
+		-- UART FIFOs size = 2^FIFO_SIZE_E
 		UART_FIFO_SIZE_E : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
 		-- Memory-mapped registers reset values
-		UART_FBAUD_RSTVL : integer range 0 to 2**UART_FBAUD_WIDTH_c-1 := UART_FBAUD_SIM_c;
+		UART_FBAUD_RSTVL : natural range 0 to 2**UART_FBAUD_WIDTH_c-1 := UART_FBAUD_SIM_c;
 		UART_CTRL_RSTVL  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := UART_CTRL_RSTVL_c;
 		UART_INTEN_RSTVL : std_logic_vector(UART_NUM_INT_c-1 downto 0) := INT_RX_FIFO_EMPTY_c
 	);

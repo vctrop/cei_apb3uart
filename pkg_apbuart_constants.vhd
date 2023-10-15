@@ -66,25 +66,28 @@ package pkg_apbuart_constants is
 	constant UART_INTEN_ADDR_c   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"0000000C";
 	constant UART_INTPEND_ADDR_c : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := x"00000010";
 	
-	-- Register reset values
-	-- Control register masks
-	-- Data, error and interrupt pending registers do not have configurable reset values
-	constant UART_FBAUD_SIM_c    : integer range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
+	-- Register reset values for simulation
+	constant UART_FBAUD_SIM_c    : natural range 0 to 2**UART_FBAUD_WIDTH_c - 1   := 255;
 	constant UART_CTRL_RSTVL_c   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := "01111111" &         -- Rx FIFO watermark = 127
 	                                                                                 "01111111" &         -- Tx FIFO watermark = 127
 	                                                                                 '0' &                -- Odd/even parity selector
 	                                                                                 '0' &                -- Parity disable
 	                                                                                 '0';                 -- 1 stop bits
-	-- Interrupt masks
-	constant INT_RX_FIFO_EMPTY_c : std_logic_vector(UART_NUM_INT_c-1 downto 0)  := "001000";              -- Only enable Rx FIFO empty interrupt
+																																									 
+																																									 
+	constant INVERTER_CHAIN_LENGTH_RSTVL_c : natural := 2;
 	
 	-- UART Tx and Rx FIFOs
 	-- FIFO size's base-2 exponent (size = 2 ** size_e)
-	constant UART_FIFO_SIZE_E_c : natural := 8;
+	constant UART_FIFO_SIZE_E_c : natural := 6;                         -- Tx and Rx FIFOs w/ 64 bytes each
 	
 	-- FIFO word width
 	constant UART_FIFO_WIDTH_c  : natural := 8;
 
+	-- Constants for specific use cases
+	---- Rx FIFO empty interrupt mask
+	constant INT_RX_FIFO_EMPTY_c : std_logic_vector(UART_NUM_INT_c-1 downto 0)  := "001000"; 
+	
 	-- Types
 	type slv_array_t is array (natural range <>) of std_logic_vector(APB_DATA_WIDTH_c-1 downto 0); 
 end package pkg_apbuart_constants;
