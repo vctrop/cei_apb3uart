@@ -15,8 +15,8 @@ library ieee;
 	use ieee.numeric_std.all;
 	use ieee.std_logic_1164.all;
 
--- ceilib
-	use work.pkg_uart_constants.all;
+--
+	use work.pkg_apbuart_constants.all;
 
 entity apb_uart is
 	generic (
@@ -24,13 +24,13 @@ entity apb_uart is
 		APB_DATA_WIDTH    : natural range 8 to 32 := APB_DATA_WIDTH_c;
 		APB_ADDR_WIDTH    : natural range 8 to 32 := APB_ADDR_WIDTH_c;
 		-- UART FIFOs size = 2^FIFOS_SIZE_E
-		FIFOS_SIZE_E      : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
+		UART_FIFO_SIZE_E  : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
 		-- Memory-mapped registers
 		-- Register widths
 		UART_DATA_WIDTH   : natural range 8 to 8  := UART_DATA_WIDTH_c;
 		UART_FBAUD_WIDTH  : natural range 0 to 32 := UART_FBAUD_WIDTH_c;
 		UART_CTRL_WIDTH   : natural range 0 to 32 := UART_CTRL_WIDTH_c;
-		UART_INT_WIDTH    : natural range 0 to 8  := UART_INT_WIDTH_c;
+		UART_NUM_INT      : natural range 0 to 8  := UART_NUM_INT_c;
 		-- Register addresses
 		UART_DATA_ADDR    : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_DATA_ADDR_c;
 		UART_FBAUD_ADDR   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_FBAUD_ADDR_c;
@@ -38,12 +38,12 @@ entity apb_uart is
 		UART_INTEN_ADDR   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_INTEN_ADDR_c;
 		UART_INTPEND_ADDR : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := UART_INTPEND_ADDR_c;
 		-- Register reset values
-		UART_FBAUD_RSTVL  : integer range 0 to 2**UART_FBAUD_WIDTH_c-1   := UART_FBAUD_SIM_c;
+		UART_FBAUD_RSTVL  : integer range 0 to 2**UART_FBAUD_WIDTH_c-1     := UART_FBAUD_SIM_c;
 		UART_CTRL_RSTVL   : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := UART_CTRL_RSTVL_c;
-		UART_INTEN_RSTVL  : std_logic_vector(UART_INT_WIDTH_c-1 downto 0)  := UART_INTEN_RSTVL_c
+		UART_INTEN_RSTVL  : std_logic_vector(UART_NUM_INT_c-1 downto 0)    := INT_RX_FIFO_EMPTY_c
 	);
 	port(
-		-- Clock and negated reset
+		-- Clock and reset (active low)
 		clk       : std_logic;
 		rstn      : std_logic;
 		-- AMBA 3 APB
@@ -64,7 +64,7 @@ entity apb_uart is
 end apb_uart;
 
 architecture behavioral of apb_uart is
-		-- AMBA APB
+	-- AMBA APB
 	-- APB finite state machine
 	type fsm_state_apb_t is(Sapb_idle, Sapb_setup, Sapb_access);
 	signal reg_state_apb : fsm_state_apb_t;
@@ -73,23 +73,22 @@ architecture behavioral of apb_uart is
 	signal reg_paddr   : std_logic_vector(APB_ADDR_WIDTH-1 downto 0);
 	signal reg_pwrite  : std_logic;
 	signal reg_penable : std_logic;
-	--
 	signal valid_address_s : std_logic;
 	
 	-- Memory-mapped registers 
 	signal reg_data_tx : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
 	signal reg_fbaud   : integer range 0 to 2**UART_FBAUD_WIDTH - 1;
 	signal reg_control : std_logic_vector(UART_CTRL_WIDTH-1 downto 0);
-	signal reg_inten   : std_logic_vector(UART_INT_WIDTH-1 downto 0);
-	signal reg_intpend : std_logic_vector(UART_INT_WIDTH-1 downto 0);
-	signal intpend_s   : std_logic_vector(UART_INT_WIDTH-1 downto 0);
+	signal reg_inten   : std_logic_vector(UART_NUM_INT-1 downto 0);
+	signal reg_intpend : std_logic_vector(UART_NUM_INT-1 downto 0);
+	signal intpend_s   : std_logic_vector(UART_NUM_INT-1 downto 0);
 	
 	-- Control register outline
 	signal ctrl_stop_s        : std_logic;                        -- [0] Stop bit: LOW for one, high for TWO stop bits
 	signal ctrl_parity_en_s   : std_logic;                        -- [1] Parity enable
 	signal ctrl_parity_type_s : std_logic;                        -- [2] Parity select: LOW for odd, HIGH for even
-	signal ctrl_txfifo_wm_s   : unsigned(7 downto 0);     -- [3-10] (future) Tx FIFO watermark size_e: watermark = 2^(size_e)
-	signal ctrl_rxfifo_wm_s   : unsigned(7 downto 0);     -- [11-18] (future) Rx FIFO watermark size_e: watermark = 2^(size_e)
+	signal ctrl_txfifo_wm_s   : unsigned(7 downto 0);             -- [3-10] (future) Tx FIFO watermark size_e: watermark = 2^(size_e)
+	signal ctrl_rxfifo_wm_s   : unsigned(7 downto 0);             -- [11-18] (future) Rx FIFO watermark size_e: watermark = 2^(size_e)
 	
 	-- Interrupt enable register outline
 	signal inten_txfifo_full_s  : std_logic;                      -- [0] Tx FIFO full
@@ -123,7 +122,7 @@ architecture behavioral of apb_uart is
 	signal txfifo_out_s   : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
 	signal txfifo_full_s  : std_logic;
 	signal txfifo_empty_s : std_logic;
-	signal txfifo_usage_s : std_logic_vector(FIFOS_SIZE_E downto 0);
+	signal txfifo_usage_s : std_logic_vector(UART_FIFO_SIZE_E downto 0);
 	
 	-- Rx FIFO
 	signal rxfifo_push_s  : std_logic;
@@ -132,7 +131,7 @@ architecture behavioral of apb_uart is
 	signal rxfifo_out_s   : std_logic_vector(UART_DATA_WIDTH-1 downto 0);
 	signal rxfifo_full_s  : std_logic;
 	signal rxfifo_empty_s : std_logic;
-	signal rxfifo_usage_s : std_logic_vector(FIFOS_SIZE_E downto 0);
+	signal rxfifo_usage_s : std_logic_vector(UART_FIFO_SIZE_E downto 0);
 	
 	-- Clock counters to measure the duration of UART bauds (the max. value it must keep is 2*max_FBaud)
 	signal reg_clk_count_tx    : integer range 0 to 2**(UART_FBAUD_WIDTH + 1) - 1;
@@ -218,7 +217,7 @@ begin
 									reg_control <= pwdata_i(UART_CTRL_WIDTH-1 downto 0);
 								-- UART interrupt enable register
 								elsif paddr_i = UART_INTEN_ADDR then
-									reg_inten <= pwdata_i(UART_INT_WIDTH-1 downto 0);
+									reg_inten <= pwdata_i(UART_NUM_INT-1 downto 0);
 								end if;
 							end if;
 							
@@ -278,7 +277,7 @@ begin
 	
 	TX_FIFO: entity work.dual_port_fifo(behavioral)
 	generic map(
-		FIFO_SIZE_E => FIFOS_SIZE_E,
+		FIFO_SIZE_E => UART_FIFO_SIZE_E,
 		FIFO_WIDTH  => UART_DATA_WIDTH
 	)
 	port map(
@@ -302,7 +301,7 @@ begin
 	
 	RX_FIFO: entity work.dual_port_fifo(behavioral)
 	generic map(
-		FIFO_SIZE_E => FIFOS_SIZE_E,
+		FIFO_SIZE_E => UART_FIFO_SIZE_E,
 		FIFO_WIDTH  => UART_DATA_WIDTH
 	)
 	port map(
@@ -592,10 +591,10 @@ begin
 	expand_fbaud_s(UART_FBAUD_WIDTH-1 downto 0)               <= std_logic_vector(to_unsigned(reg_fbaud, UART_FBAUD_WIDTH));
 	expand_control_s(APB_DATA_WIDTH-1 downto UART_CTRL_WIDTH) <= (others => '0');
 	expand_control_s(UART_CTRL_WIDTH-1 downto 0)              <= reg_control;
-	expand_inten_s(APB_DATA_WIDTH-1 downto UART_INT_WIDTH)    <= (others => '0');
-	expand_inten_s(UART_INT_WIDTH-1 downto 0)                 <= reg_inten;
-	expand_intpend_s(APB_DATA_WIDTH-1 downto UART_INT_WIDTH)  <= (others => '0');
-	expand_intpend_s(UART_INT_WIDTH-1 downto 0)               <= reg_intpend;
+	expand_inten_s(APB_DATA_WIDTH-1 downto UART_NUM_INT)    <= (others => '0');
+	expand_inten_s(UART_NUM_INT-1 downto 0)                 <= reg_inten;
+	expand_intpend_s(APB_DATA_WIDTH-1 downto UART_NUM_INT)  <= (others => '0');
+	expand_intpend_s(UART_NUM_INT-1 downto 0)               <= reg_intpend;
 	-- Read data bus
 	prdata_s  <= expand_rxword_s  when reg_state_apb = Sapb_setup and reg_pwrite = '0' and reg_paddr = UART_DATA_ADDR else
 	             expand_fbaud_s   when reg_state_apb = Sapb_setup and reg_pwrite = '0' and reg_paddr = UART_FBAUD_ADDR else
@@ -617,7 +616,6 @@ begin
 					
 	-- Interrupt
 	int_s <= '1' when unsigned(intpend_s) /= 0 else '0';
-	
 	
 	-- Drive outputs
 	prdata_o  <= prdata_s;

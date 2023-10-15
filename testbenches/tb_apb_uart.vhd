@@ -16,7 +16,7 @@ library ieee;
 	-- use ieee.numeric_std.all;
 
 --
-	use work.pkg_uart_constants.all;
+	use work.pkg_apbuart_constants.all;
 
 entity tb_apb_uart is
 end tb_apb_uart;
@@ -29,9 +29,9 @@ architecture behavioral of tb_apb_uart is
 	signal rstn : std_logic  := '0';
 	
 	-- APB Requester signals
-	signal prdata_s    : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0);
-	signal pready_s    : std_logic;
-	signal pslverr_s   : std_logic;
+	signal prdata_s  : std_logic_vector(APB_DATA_WIDTH_c-1 downto 0);
+	signal pready_s  : std_logic;
+	signal pslverr_s : std_logic;
 	
 		-- APB Completer signals
 	signal paddr_s   : std_logic_vector(APB_ADDR_WIDTH_c-1 downto 0) := (others => '0');
@@ -53,7 +53,7 @@ begin
 	
 	DUV: entity work.apb_uart(behavioral)
 	port map(
-		-- Clock and negated reset
+		-- Clock and reset (active low)
 		clk       => clk,
 		rstn      => rstn,
 		
