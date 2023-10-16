@@ -276,7 +276,7 @@ begin
 	txfifo_in_s   <= reg_data_tx;                                                                               --	Tx FIFO reads data from the memory-mapped Tx data register
 	txfifo_push_s <= '1' when reg_state_apb = Sapb_access and reg_pwrite = '1' and reg_paddr = UART_DATA_ADDR else '0';           -- Push to Tx FIFO in APB writes to UART_DATA_ADDR
 	
-	TX_FIFO: entity work.dual_port_fifo(behavioral)
+	TX_FIFO: entity work.dp_fifo(behavioral)
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E,
 		FIFO_WIDTH  => UART_DATA_WIDTH
@@ -300,7 +300,7 @@ begin
 	rxfifo_push_s <= '1' when (ctrl_parity_en_s = '0' and reg_state_rx = Suart_data_bits and rx_counting_clock_s = '0' and reg_bit_count_rx = UART_DATA_WIDTH) or          -- For parity disabled
 														(reg_state_rx = Suart_parity_bit and rx_counting_clock_s = '0' and reg_parity_rx_read = reg_parity_rx_computed) else '0';                    -- For parity enabled
 	
-	RX_FIFO: entity work.dual_port_fifo(behavioral)
+	RX_FIFO: entity work.dp_fifo(behavioral)
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E,
 		FIFO_WIDTH  => UART_DATA_WIDTH

@@ -18,10 +18,10 @@ library ieee;
 -- 
 	use work.pkg_apbuart_constants.all;
 
-entity tb_dual_port_fifo is
-end tb_dual_port_fifo;
+entity tb_dp_fifo is
+end tb_dp_fifo;
 
-architecture behavioral of tb_dual_port_fifo is
+architecture behavioral of tb_dp_fifo is
 	-- Clock and reset
 	constant half_clk_period : time := 10 ns;
 	constant clk_period      : time := 2*half_clk_period;
@@ -44,10 +44,12 @@ begin
 	clk <= not clk after half_clk_period;
 	rstn <= '1' after 5*clk_period;
 	
-	DUV: entity work.dual_port_fifo(behavioral)
+	DUV: entity work.dp_fifo(behavioral)
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E_c,
-		FIFO_WIDTH  => UART_FIFO_WIDTH_c
+		FIFO_WIDTH  => UART_FIFO_WIDTH_c,
+		EDAC_WIDTH  => FIFO_EDAC_WIDTH_c,
+		ENABLE_EDAC => '1'
 	)
 	port map(
 	-- Clock and reset (active low)

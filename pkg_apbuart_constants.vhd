@@ -84,6 +84,12 @@ package pkg_apbuart_constants is
 	-- FIFO word width
 	constant UART_FIFO_WIDTH_c  : natural := 8;
 
+	-- FIFO EDAC
+	constant FIFO_ENABLE_EDAC_c : std_logic := '1';
+	constant FIFO_EDAC_WIDTH_c  : natural := 6;
+	
+
+
 	-- Constants for specific use cases
 	---- Rx FIFO empty interrupt mask
 	constant INT_RX_FIFO_EMPTY_c : std_logic_vector(UART_NUM_INT_c-1 downto 0)  := "001000"; 
