@@ -23,8 +23,10 @@ entity apb_uart is
 		-- Bus widths
 		APB_DATA_WIDTH    : natural range 8 to 32 := APB_DATA_WIDTH_c;
 		APB_ADDR_WIDTH    : natural range 8 to 32 := APB_ADDR_WIDTH_c;
-		-- UART FIFOs size = 2^FIFO_SIZE_E
-		UART_FIFO_SIZE_E  : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
+		-- UART Tx and Rx FIFOs
+		UART_FIFO_SIZE_E  : natural range 0 to 10 := UART_FIFO_SIZE_E_c;                                -- UART FIFOs size = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH   : natural range 0 to 16 := FIFO_EDAC_WIDTH_EN_c;
+		FIFO_ENABLE_EDAC  : std_logic             := FIFO_ENABLE_EDAC_c;
 		-- Memory-mapped registers
 		-- Register widths
 		UART_DATA_WIDTH   : natural range 8 to 8  := UART_DATA_WIDTH_c;
@@ -176,7 +178,6 @@ architecture behavioral of apb_uart is
 begin
 
 	-- AMBA 3 APB
-	
 	-- APB FSM
 	APB_FSM: process(clk)
 	begin
@@ -279,7 +280,9 @@ begin
 	TX_FIFO: entity work.dp_fifo(behavioral)
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E,
-		FIFO_WIDTH  => UART_DATA_WIDTH
+		FIFO_WIDTH  => UART_DATA_WIDTH,
+		EDAC_WIDTH  => FIFO_EDAC_WIDTH,
+		ENABLE_EDAC => FIFO_ENABLE_EDAC
 	)
 	port map(
 		clk     => clk,
@@ -303,7 +306,9 @@ begin
 	RX_FIFO: entity work.dp_fifo(behavioral)
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E,
-		FIFO_WIDTH  => UART_DATA_WIDTH
+		FIFO_WIDTH  => UART_DATA_WIDTH,
+		EDAC_WIDTH  => FIFO_EDAC_WIDTH,
+		ENABLE_EDAC => FIFO_ENABLE_EDAC
 	)
 	port map(
 		clk     => clk,

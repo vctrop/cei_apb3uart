@@ -48,8 +48,8 @@ begin
 	generic map(
 		FIFO_SIZE_E => UART_FIFO_SIZE_E_c,
 		FIFO_WIDTH  => UART_FIFO_WIDTH_c,
-		EDAC_WIDTH  => FIFO_EDAC_WIDTH_c,
-		ENABLE_EDAC => '1'
+		EDAC_WIDTH  => FIFO_EDAC_WIDTH_EN_c,
+		ENABLE_EDAC => FIFO_ENABLE_EDAC_c
 	)
 	port map(
 	-- Clock and reset (active low)

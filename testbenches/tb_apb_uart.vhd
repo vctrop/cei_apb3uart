@@ -52,6 +52,12 @@ begin
 	rstn <= '1' after 5*clk_period;
 	
 	DUV: entity work.apb_uart(behavioral)
+	generic map(
+		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c,                             -- Frequency/baud ratio of the UART controllers: floor(clk_freq/baud_rate)
+		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E_c,                           -- Exponent for the UART FIFO sizes. FIFO_SIZE = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH  => FIFO_EDAC_WIDTH_EN_c,
+		FIFO_ENABLE_EDAC => FIFO_ENABLE_EDAC_c
+	)
 	port map(
 		-- Clock and reset (active low)
 		clk       => clk,

@@ -22,10 +22,10 @@ entity dp_fifo is
 	generic (
 		-- FIFO size  = 2 ** FIFO_SIZE_E
 		FIFO_SIZE_E : natural range 0 to 10 := UART_FIFO_SIZE_E_c;
-		-- Only add FIFO_EDAC_WIDTH_c if using ENABLE_EDAC = '1'
+		-- Only add FIFO_EDAC_WIDTH_EN_c if using ENABLE_EDAC = '1'
 		FIFO_WIDTH  : natural range 1 to 32 := UART_FIFO_WIDTH_c;
 		-- Hamming (7,4) SEC for each nibble of the UART word
-		EDAC_WIDTH  : natural range 0 to 16 := FIFO_EDAC_WIDTH_c;
+		EDAC_WIDTH  : natural range 0 to 16 := FIFO_EDAC_WIDTH_EN_c;
 		ENABLE_EDAC : std_logic := FIFO_ENABLE_EDAC_c
 	);
 	port (

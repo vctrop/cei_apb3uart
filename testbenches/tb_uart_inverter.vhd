@@ -69,7 +69,9 @@ begin
 
 	DUV : entity work.uart_inverter(behavioral)
 	generic map(
-		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c
+		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c,
+		FIFO_EDAC_WIDTH  => FIFO_EDAC_WIDTH_EN_c,
+		FIFO_ENABLE_EDAC => FIFO_ENABLE_EDAC_c
 	)
 	port map(
 		clk  => clk,

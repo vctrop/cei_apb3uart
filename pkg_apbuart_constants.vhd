@@ -84,9 +84,11 @@ package pkg_apbuart_constants is
 	-- FIFO word width
 	constant UART_FIFO_WIDTH_c  : natural := 8;
 
-	-- FIFO EDAC
+	-- FIFO EDAC enabled
 	constant FIFO_ENABLE_EDAC_c : std_logic := '1';
-	constant FIFO_EDAC_WIDTH_c  : natural := 6;
+	constant FIFO_DISABLE_EDAC_c : std_logic := '0';
+	constant FIFO_EDAC_WIDTH_EN_c  : natural := 6;
+	constant FIFO_EDAC_WIDTH_DIS_c  : natural := 0;
 	
 
 

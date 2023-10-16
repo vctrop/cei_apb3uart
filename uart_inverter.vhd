@@ -25,8 +25,10 @@ entity uart_inverter is
 		-- Bus widths
 		APB_DATA_WIDTH    : natural range 8 to 32 := APB_DATA_WIDTH_c;
 		APB_ADDR_WIDTH    : natural range 8 to 32 := APB_ADDR_WIDTH_c;
-		-- UART FIFOs size = 2^FIFO_SIZE_E
-		UART_FIFO_SIZE_E : natural range 0 to 10  := UART_FIFO_SIZE_E_c;
+		-- UART Tx and Rx FIFOs
+		UART_FIFO_SIZE_E  : natural range 0 to 10 := UART_FIFO_SIZE_E_c;                                -- UART FIFOs size = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH   : natural range 0 to 16 := FIFO_EDAC_WIDTH_EN_c;
+		FIFO_ENABLE_EDAC  : std_logic             := FIFO_ENABLE_EDAC_c;
 		-- Memory-mapped registers reset values
 		UART_FBAUD_RSTVL : natural range 0 to 2**UART_FBAUD_WIDTH_c-1 := UART_FBAUD_SIM_c;
 		UART_CTRL_RSTVL  : std_logic_vector(UART_CTRL_WIDTH_c-1 downto 0) := UART_CTRL_RSTVL_c;
@@ -99,10 +101,12 @@ begin
 	COMP: entity work.apb_uart(behavioral)
 	generic map(
 		-- Bus widths
-		APB_DATA_WIDTH   => APB_DATA_WIDTH,     -- Width of the APB data bus
-		APB_ADDR_WIDTH   => APB_ADDR_WIDTH,     -- Width of the address bus
+		APB_DATA_WIDTH   => APB_DATA_WIDTH,               -- Width of the APB data bus
+		APB_ADDR_WIDTH   => APB_ADDR_WIDTH,               -- Width of the address bus
 		-- UART FIFOs size
-		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E,
+		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E,             -- UART FIFOs size = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH  => FIFO_EDAC_WIDTH,
+		FIFO_ENABLE_EDAC => FIFO_ENABLE_EDAC,
 		-- Memory-mapped registers reset values
 		UART_FBAUD_RSTVL => UART_FBAUD_RSTVL,
 		UART_CTRL_RSTVL  => UART_CTRL_RSTVL,

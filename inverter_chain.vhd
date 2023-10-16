@@ -26,9 +26,11 @@ entity inverter_chain is
 		CHAIN_LENGTH     : natural range 2 to 100 := INVERTER_CHAIN_LENGTH_RSTVL_c;
 		-- Frequency/baud ratio of the UART controllers: floor(clk_freq/baud_rate)
 		UART_FBAUD_RSTVL : natural := UART_FBAUD_SIM_c;
-		-- Exponent for the UART FIFO sizes. FIFO_SIZE = 2^FIFO_SIZE_E
-		UART_FIFO_SIZE_E : natural := UART_FIFO_SIZE_E_c
-		);
+		-- UART Tx and Rx FIFOs
+		UART_FIFO_SIZE_E  : natural range 0 to 10 := UART_FIFO_SIZE_E_c;                                -- UART FIFOs size = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH   : natural range 0 to 16 := FIFO_EDAC_WIDTH_EN_c;
+		FIFO_ENABLE_EDAC  : std_logic             := FIFO_ENABLE_EDAC_c
+	);
 	port (
 		-- Clock and reset (active low)
 		clk  : in std_logic;
@@ -56,7 +58,9 @@ begin
 		UART_INV: entity work.uart_inverter(behavioral)
 		generic map(
 			UART_FBAUD_RSTVL => UART_FBAUD_RSTVL,
-			UART_FIFO_SIZE_E => UART_FIFO_SIZE_E
+			UART_FIFO_SIZE_E => UART_FIFO_SIZE_E,
+			FIFO_EDAC_WIDTH  => FIFO_EDAC_WIDTH,
+			FIFO_ENABLE_EDAC => FIFO_ENABLE_EDAC
 		)
 		port map(
 			-- Clock and reset (active low)

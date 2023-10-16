@@ -84,8 +84,10 @@ begin
 	DUV : entity work.inverter_chain(behavioral)
 	generic map(
 		CHAIN_LENGTH     => 15,                                           -- Number of inverters in the chain
-		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c,                              -- Frequency/baud ratio of the UART controllers: floor(clk_freq/baud_rate)
-		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E_c                             -- Exponent for the UART FIFO sizes. FIFO_SIZE = 2^FIFO_SIZE_E
+		UART_FBAUD_RSTVL => UART_FBAUD_SIM_c,                             -- Frequency/baud ratio of the UART controllers: floor(clk_freq/baud_rate)
+		UART_FIFO_SIZE_E => UART_FIFO_SIZE_E_c,                           -- Exponent for the UART FIFO sizes. FIFO_SIZE = 2^FIFO_SIZE_E
+		FIFO_EDAC_WIDTH  => FIFO_EDAC_WIDTH_DIS_c,
+		FIFO_ENABLE_EDAC => FIFO_DISABLE_EDAC_c
 	)
 	port map(
 		clk  => clk,
