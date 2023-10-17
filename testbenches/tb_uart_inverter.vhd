@@ -16,7 +16,7 @@ library ieee;
 	-- use ieee.numeric_std.all; 
 
 --
-	use work.pkg_apbuart_constants.all;
+	use work.pkg_apbuart.all;
 	
 entity tb_uart_inverter is
 end tb_uart_inverter;

@@ -16,7 +16,7 @@ library ieee;
 	use ieee.std_logic_1164.all;
 
 --
-	use work.pkg_apbuart_constants.all;
+	use work.pkg_apbuart.all;
 
 entity apb_uart is
 	generic (

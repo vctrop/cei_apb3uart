@@ -15,7 +15,7 @@ library ieee;
 	use ieee.std_logic_1164.all;
 	use ieee.numeric_std.all;
 	
-package pkg_apbuart_constants is
+package pkg_apbuart is
 	-- AMBA
 	-- Bus widths
 	constant APB_DATA_WIDTH_c : natural := 32;
@@ -39,19 +39,19 @@ package pkg_apbuart_constants is
 	--      [3-10]  Tx FIFO watermark
 	--      [11-18] Rx FIFO watermark
 	-- 0x0C (r/w) UART interrupt enable
-	--      [0] (future) Tx FIFO full
-	--      [1] (future) Rx FIFO full
-	--      [2] (future) Tx FIFO empty
-	--      [3] (future) Rx FIFO empty
-	--      [4] (future) Tx FIFO positions occupied < watermark
-	--      [5] (future) Rx FIFO positions occupied > watermark
+	--      [0] Tx FIFO full
+	--      [1] Rx FIFO full
+	--      [2] Tx FIFO empty
+	--      [3] Rx FIFO empty
+	--      [4] Tx FIFO positions occupied < watermark
+	--      [5] Rx FIFO positions occupied > watermark
 	-- 0x10 (r/-) UART interrupt pending register - read-only and driven by the conditions alone
-	--      [0] (future) Tx FIFO full
-	--      [1] (future) Rx FIFO full
-	--      [2] (future) Tx FIFO empty
-	--      [3] (future) Rx FIFO empty
-	--      [4] (future) Tx FIFO positions occupied < watermark
-	--      [5] (future) Rx FIFO positions occupied > watermark
+	--      [0] Tx FIFO full
+	--      [1] Rx FIFO full
+	--      [2] Tx FIFO empty
+	--      [3] Rx FIFO empty
+	--      [4] Tx FIFO positions occupied < watermark
+	--      [5] Rx FIFO positions occupied > watermark
 	
 	-- Register widths
 	constant UART_DATA_WIDTH_c   : natural := 8;
@@ -100,9 +100,9 @@ package pkg_apbuart_constants is
 	-- Functions
 	function f_log2 (x : positive) return natural;
 	
-end package pkg_apbuart_constants;
+end package pkg_apbuart;
 
-package body pkg_apbuart_constants is
+package body pkg_apbuart is
 
 	-- Modified log2 which returns f_log2(1) = 1
 	function f_log2 (x : positive) return natural is
@@ -122,4 +122,4 @@ package body pkg_apbuart_constants is
 
 	end function;
 
-end package body pkg_apbuart_constants;
+end package body pkg_apbuart;

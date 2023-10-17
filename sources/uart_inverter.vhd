@@ -18,7 +18,7 @@ library ieee;
 	-- use ieee.math_real.log2;
 
 -- 
-	use work.pkg_apbuart_constants.all;
+	use work.pkg_apbuart.all;
 
 entity uart_inverter is
 	generic (

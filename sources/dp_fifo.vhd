@@ -16,7 +16,7 @@ library ieee;
 	use ieee.numeric_std.all;
 
 -- work library 	
-	use work.pkg_apbuart_constants.all;
+	use work.pkg_apbuart.all;
 
 entity dp_fifo is
 	generic (
