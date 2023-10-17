@@ -1,4 +1,4 @@
-#<p align="center">UART controller</p>
+<p align="center">UART controller</p>
 
 Description of a UART controller as a memory-mapped peripheral, licensed under CERN Open Hardware License OHL-S v2.
 
