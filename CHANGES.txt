@@ -2,4 +2,4 @@ As per CERN-OHL-S v2 section 4, should You produce hardware based on these sourc
 
 Version 1.0 - May, 2016 - Everton Alceu Carara
 Version 1.1 - June, 2019 - Victor O. Costa, Julio Costella
-Version 1.2 - October, 2023 - Victor O. Costa
+Version 2.0 - October, 2023 - Victor O. Costa

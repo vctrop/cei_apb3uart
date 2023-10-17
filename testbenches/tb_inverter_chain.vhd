@@ -11,7 +11,6 @@
 -- these sources, You must maintain the Source Location visible on any
 -- product you make using this documentation.
 
-
 library ieee;
 	use ieee.std_logic_1164.all;
 	-- use ieee.numeric_std.all; 

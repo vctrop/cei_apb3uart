@@ -6,7 +6,7 @@
 -- WARRANTY, INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY
 -- AND FITNESS FOR A PARTICULAR PURPOSE. Please see the CERN-OHL-S v2
 -- for applicable conditions.
--- Source location: https://github.com/vctrop/apb_uart
+-- Source location: https://github.com/vctrop/cei_apb3uart
 -- As per CERN-OHL-S v2 section 4, should You produce hardware based on
 -- these sources, You must maintain the Source Location visible on any
 -- product you make using this documentation.
