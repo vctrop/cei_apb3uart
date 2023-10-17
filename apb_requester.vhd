@@ -14,8 +14,8 @@
 library ieee;
 	use ieee.std_logic_1164.all;
 	use ieee.numeric_std.all;
-	use ieee.math_real.ceil;
-	use ieee.math_real.log2;
+	-- use ieee.math_real.ceil;
+	-- use ieee.math_real.log2;
 
 -- 
 	use work.pkg_apbuart_constants.all;
@@ -71,6 +71,7 @@ architecture behavioral of apb_requester is
 	-- 
 	signal paddr_s   : std_logic_vector(APB_ADDR_WIDTH-1 downto 0);
 	signal psel_s    : std_logic_vector(NUM_PERIPH-1 downto 0);
+	signal psel_int_s: std_logic_vector(NUM_PERIPH-1 downto 0);
 	signal penable_s : std_logic;
 	signal pwrite_s  : std_logic;
 	signal pwdata_s  : std_logic_vector(APB_DATA_WIDTH-1 downto 0);
@@ -80,7 +81,8 @@ architecture behavioral of apb_requester is
 	
 	-- Interrupt priory encoder
 	-- Still synthesizable because ieee.math_real is only used at synthesis time
-	signal reg_int_id : unsigned(integer(ceil(log2(real(NUM_PERIPH))))-1 downto 0);
+	-- signal reg_int_id : unsigned(integer(ceil(log2(real(NUM_PERIPH))))-1 downto 0);
+	signal reg_int_id : unsigned(f_log2(NUM_PERIPH)-1 downto 0);
 	
 	-- AMBA version-dependent FSM state transitions
 	signal Sraccess_to_Swidle_s : std_logic_vector(NUM_PERIPH-1 downto 0);
@@ -177,9 +179,15 @@ begin
 		end if;
 	end process;
 	
+	
+		-- NanoXplore syntesis tool did not like (to_integer(reg_int_id) => '1', others => '0')
+	GEN_ONE_HOT: for i in psel_int_s'range generate
+		psel_int_s(i) <= '1' when (i = to_integer(reg_int_id)) else '0';
+	end generate;
+	
 	-- Control outputs
-	psel_s    <= (to_integer(reg_int_id) => '1', others => '0') when reg_state = Sread_setup or reg_state = Swrite_setup 
-	                                               or reg_state = Sread_access or reg_state = Swrite_access else (others => '0');
+	psel_s    <= psel_int_s when reg_state = Sread_setup or reg_state = Swrite_setup or
+												       reg_state = Sread_access or reg_state = Swrite_access else (others => '0');									 
 	penable_s <= '1' when reg_state = Sread_access or reg_state = Swrite_access else '0';
 	pwrite_s  <= '1' when reg_state = Swrite_setup or reg_state = Swrite_access else '0';
 

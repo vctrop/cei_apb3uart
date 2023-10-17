@@ -90,17 +90,36 @@ package pkg_apbuart_constants is
 	constant FIFO_EDAC_WIDTH_EN_c  : natural := 6;
 	constant FIFO_EDAC_WIDTH_DIS_c  : natural := 0;
 	
-
-
 	-- Constants for specific use cases
 	---- Rx FIFO empty interrupt mask
 	constant INT_RX_FIFO_EMPTY_c : std_logic_vector(UART_NUM_INT_c-1 downto 0)  := "001000"; 
 	
 	-- Types
 	type slv_array_t is array (natural range <>) of std_logic_vector(APB_DATA_WIDTH_c-1 downto 0); 
+	
+	-- Functions
+	function f_log2 (x : positive) return natural;
+	
 end package pkg_apbuart_constants;
 
-
 package body pkg_apbuart_constants is
+
+	-- Modified log2 which returns f_log2(1) = 1
+	function f_log2 (x : positive) return natural is
+		variable i : natural;
+	begin
+	
+		if (x = 1) then
+			i := 1;
+		else
+			i := 0;
+			while (2**i < x) and i < 31 loop
+				i := i + 1;
+			end loop;
+		end if;
+		
+		return i;
+
+	end function;
 
 end package body pkg_apbuart_constants;
