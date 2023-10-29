@@ -18,7 +18,7 @@ The peripheral's parallel interface is based on the AMBA 3 APB protocol, but we 
 <p align="center">
 Block diagram of the peripheral.
 <br />
-<img src="block_diagram.png" width=500>
+<img src="block_diagram_dark.png" width=500>
 <br /><br />
 
 ### Design patterns:
