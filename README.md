@@ -15,6 +15,12 @@ The peripheral's parallel interface is based on the AMBA 3 APB protocol, but we 
 - ECC: none or 2x Hamming [7,4] on each 8-bit UART word in the FIFOs.
 </pre>
 
+<p align="center">
+Block diagram of the peripheral.
+<br />
+<img src="block_diagram.png" width=500>
+<br /><br />
+
 ### Design patterns:
 <pre>
 - Fully synchronous, with sync. resets;
